@@ -1,0 +1,133 @@
+/* Dashboard-specific styles */
+
+/* Mobile Notice Banner */
+.mobile-notice {
+    display: none;
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    color: white;
+    padding: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mobile-notice-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.mobile-notice-content svg {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.mobile-notice-text {
+    flex: 1;
+}
+
+.mobile-notice-text strong {
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+}
+
+.mobile-notice-text p {
+    margin: 0;
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+
+.mobile-notice-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+
+.mobile-notice-close:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Show mobile notice only on small screens */
+@media (max-width: 1024px) {
+    .mobile-notice {
+        display: block;
+    }
+}
+
+/* Bench marker styling - remove default outlines */
+.leaflet-image-layer.leaflet-interactive, .leaflet-marker-icon.leaflet-interactive, .leaflet-pane>svg path.leaflet-interactive, svg.leaflet-image-layer.leaflet-interactive path {
+    pointer-events: visiblePainted;
+    pointer-events: auto;
+}
+
+/* Override button styling for Leaflet markers */
+.leaflet-marker-icon[role="button"] {
+    --pico-background-color: transparent !important;
+    --pico-border-color: transparent !important;
+    --pico-color: inherit !important;
+    --pico-box-shadow: none !important;
+    padding: 0 !important;
+    border: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.bench-marker {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.bench-marker div {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Modal content headings */
+.modal-box .modal-content h2,
+.modal-box .modal-content h3,
+.modal-box .modal-content h4 {
+    font-family: 'MrDodo', serif !important;
+    color: #572B70 !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.modal-box .modal-content h2 {
+    font-size: 1.2rem !important;
+}
+
+.modal-box .modal-content h3 {
+    font-size: 1.1rem !important;
+}
+
+.modal-box .modal-content h4 {
+    font-size: 1rem !important;
+}
+
+/* Modal box sizing */
+.modal-box {
+    max-width: 650px !important;
+    width: 95% !important;
+    padding: 2rem 2rem 2rem 3rem !important;
+}
