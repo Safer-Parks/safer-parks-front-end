@@ -1295,6 +1295,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         document.addEventListener('DOMContentLoaded', setupModalHandlers);
         
         // Initialize map with zoom controls disabled (we'll add them to bottom-right)
+        // Remote data configuration - Load from GitHub instead of local files
+        const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main';
+        
         const map = L.map('map', {
             zoomControl: false
         }).setView([54.0, -1.5], 7);
@@ -1405,8 +1408,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         
         // Utility function to get proper path for authority
         function getAuthorityPath(authorityId) {
-            // Test-Region folder structure: Test-Region/{authorityId}/
-            return `${authorityId}/`;
+            // Load from GitHub E12000003 repo: {GITHUB_BASE_URL}/{authorityId}/
+            return `${GITHUB_BASE_URL}/${authorityId}/`;
         }
         
         // Load authorities from LUT

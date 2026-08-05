@@ -1,0 +1,22 @@
+{
+"type": "FeatureCollection",
+"name": "E12000003_lut",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E06000010","auth_name_e":"Kingston upon Hull, City of","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E06000010"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E06000011","auth_name_e":"East Riding of Yorkshire","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E06000011"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E06000012","auth_name_e":"North East Lincolnshire","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E06000012"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E06000013","auth_name_e":"North Lincolnshire","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E06000013"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E06000014","auth_name_e":"York","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E06000014"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E06000065","auth_name_e":"North Yorkshire","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E06000065"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000016","auth_name_e":"Barnsley","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000016"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000017","auth_name_e":"Doncaster","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000017"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000018","auth_name_e":"Rotherham","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000018"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000019","auth_name_e":"Sheffield","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000019"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000032","auth_name_e":"Bradford","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000032"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000033","auth_name_e":"Calderdale","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000033"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000034","auth_name_e":"Kirklees","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000034"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000035","auth_name_e":"Leeds","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000035"},"geometry":null},
+{"type":"Feature","properties":{"region_id":"E12000003","reg_name_e":"Yorkshire and The Humber","reg_name_w":null,"authority_id":"E08000036","auth_name_e":"Wakefield","auth_name_w":null,"country":"England","absolute_filepath":"England/E12000003/E08000036"},"geometry":null}
+]
+}

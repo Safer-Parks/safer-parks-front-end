@@ -1,3 +1,6 @@
+// Remote data configuration - Load from GitHub instead of local files
+const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main';
+
 // WYCA region center (West Yorkshire Combined Authority) - roughly centered between all 5 districts
 const WYCA_COORDS = [53.7, -1.6];
 const WYCA_ZOOM = 10; // Zoomed out to show entire WYCA region
@@ -809,14 +812,15 @@ const loadParkBtn = document.getElementById('loadPark');
 // Initialize by discovering available LADs from filesystem
 async function initializeLADropdown() {
     try {
-        // Load WYCA park information to get proper LAD names
-        const response = await fetch('datasets/WYCA_park_information.geojson');
+        // Load E12000003_lut.geojson locally to get proper LAD names
+        const response = await fetch('../E12000003_lut.geojson');
         const parkInfo = await response.json();
         console.log('parkInfo features:', parkInfo.features.length);
         
-        // Load the new park-specific demographics dataset
+        // Load the new park-specific demographics dataset if available
         try {
-            const demographicsResponse = await fetch('datasets/wyca_park_catchment_demographics_by_var_and_by_park.geojson');
+            // Try to load demographics data from GitHub E12000003 repo if it exists
+            const demographicsResponse = await fetch(`${GITHUB_BASE_URL}/wyca_park_catchment_demographics_by_var_and_by_park.geojson`);
             if (demographicsResponse.ok) {
                 parkDemographicsData = await demographicsResponse.json();
                 console.log('Loaded park demographics dataset with', parkDemographicsData.features.length, 'parks');
@@ -890,13 +894,12 @@ function loadParksForLA(laName) {
     parkDatasetCounts = {};
     maxDatasetCount = 0;
     
-    // Load the main parks information from WYCA_park_information.geojson
+    // Load the main parks information from E12000003_lut.geojson (loaded locally)
     Promise.all([
-        fetch('datasets/WYCA_park_information.geojson').then(r => r.json()),
-        fetch(`datasets/${laName}/`).then(r => r.text())
+        fetch('../E12000003_lut.geojson').then(r => r.json())
     ])
-    .then(([parkInfoData, dirHtml]) => {
-        // Filter parks for the selected LA from WYCA data
+    .then(([parkInfoData]) => {
+        // Filter parks for the selected LA from local LUT data
         const laParks = {
             type: 'FeatureCollection',
             features: parkInfoData.features.filter(f => f.properties['LAD'] === laName)
@@ -1074,8 +1077,8 @@ async function countDatasetsForParks(laName, parksData) {
     maxDatasetCount = 0;
     
     try {
-        // Load pre-computed dataset counts
-        const response = await fetch('datasets/dataset-counts.json');
+        // Load pre-computed dataset counts from GitHub
+        const response = await fetch(`${GITHUB_BASE_URL}/dataset-counts.json`);
         const counts = await response.json();
         
         maxDatasetCount = counts.maxCount;
@@ -1185,27 +1188,11 @@ async function loadParkData(parkName) {
     
     // Create folder name from park name using consistent sanitization
     const folderName = sanitizeForFolder(parkName);
-    const basePath = `datasets/${currentLocalAuthority}/${folderName}/`;
+    const basePath = `${GITHUB_BASE_URL}/${currentLocalAuthority}/${folderName}/`;
     
     // Dynamically discover all .geojson files in the park folder
+    // Note: GitHub raw content doesn't support directory listing, so we'll use predefined datasets
     let allFiles = [];
-    try {
-        const response = await fetch(basePath);
-        if (response.ok) {
-            const html = await response.text();
-            // Extract all .geojson filenames from the directory listing
-            const fileRegex = /href="([^"]*\.geojson)"/g;
-            let match;
-            while ((match = fileRegex.exec(html)) !== null) {
-                let filename = match[1];
-                // Extract just the filename (last part after /)
-                filename = filename.split('/').pop();
-                allFiles.push(filename);
-            }
-        }
-    } catch (err) {
-        console.warn('Could not fetch directory listing, will try predefined datasets');
-    }
     
     // Check if park exists in the new demographics dataset
     let useParkDemographicsDataset = false;
