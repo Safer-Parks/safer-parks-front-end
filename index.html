@@ -529,9 +529,14 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                  aria-labelledby="controls-heading" 
                  class="accordion-panel">
 
+                <label for="regionSelect">Select a Region:</label>
+                <select name="regionSelect" id="regionSelect">
+                    <option value="">-- Loading regions... --</option>
+                </select>
+
                 <label for="localAuthority">Select an Authority/Area:</label>
                 <select name="localAuthority" id="localAuthority">
-                    <option value="">-- Select an authority --</option>
+                    <option value="">-- Select a region first --</option>
                 </select>
 
                 <label for="parks">Parks in selected authority:</label>
@@ -1296,7 +1301,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         
         // Initialize map with zoom controls disabled (we'll add them to bottom-right)
         // Remote data configuration - Load from GitHub instead of local files
-        const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main';
+        let GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main';
+        let selectedRegion = null;
         
         const map = L.map('map', {
             zoomControl: false
@@ -1412,12 +1418,48 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return `${GITHUB_BASE_URL}/${authorityId}/`;
         }
         
+        // Load regions and populate the region dropdown
+        async function loadRegions() {
+            try {
+                const response = await fetch('regions.json');
+                const regionsData = await response.json();
+                const select = document.getElementById('regionSelect');
+                
+                // Clear existing options
+                select.innerHTML = '';
+                
+                // Add default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '-- Select a region --';
+                select.appendChild(defaultOption);
+                
+                // Add each region as an option
+                regionsData.regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region.id;
+                    option.textContent = `${region.name_en} / ${region.name_cy}`;
+                    select.appendChild(option);
+                });
+                
+                console.log('Loaded 14 regions');
+                
+                // Set default region to E12000003 (Yorkshire and The Humber)
+                select.value = 'E12000003';
+                // Trigger change event to load the default region
+                select.dispatchEvent(new Event('change'));
+            } catch (err) {
+                console.error('Error loading regions:', err);
+            }
+        }
+        
         // Load authorities from LUT
         // THIS IS WHERE I NEED TO UPDATE FOR EACH REGION!!!
         async function loadAuthorities() {
             try {
-                const lutFilename = 'E12000003_lut.geojson';
-                const response = await fetch(lutFilename);
+                // Determine which LUT to load based on selected region
+                const lutFilename = selectedRegion ? `${selectedRegion}_lut.geojson` : 'E12000003_lut.geojson';
+                const response = await fetch(`${GITHUB_BASE_URL}/${lutFilename}`);
                 const geojson = await response.json();
                 
                 mapState.authorities = geojson.features.map(feature => ({
@@ -1442,8 +1484,15 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 const regionCode = lutFilename.replace('_lut.geojson', '');
                 const githubUrl = `https://github.com/Safer-Parks/${regionCode}`;
                 
+                // Remove old GitHub link if it exists
+                const oldGithubContainer = document.querySelector('[data-github-link]');
+                if (oldGithubContainer) {
+                    oldGithubContainer.remove();
+                }
+                
                 // Add GitHub link to the menu
                 const githubLinkContainer = document.createElement('div');
+                githubLinkContainer.setAttribute('data-github-link', 'true');
                 githubLinkContainer.style.marginTop = '1rem';
                 githubLinkContainer.style.paddingTop = '1rem';
                 githubLinkContainer.style.borderTop = '1px solid #ddd';
@@ -1475,6 +1524,32 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 console.error('Error loading authorities:', error);
             }
         }
+        
+        // Handle region selection
+        document.getElementById('regionSelect').addEventListener('change', async (e) => {
+            const regionId = e.target.value;
+            if (!regionId) {
+                document.getElementById('localAuthority').disabled = true;
+                document.getElementById('localAuthority').innerHTML = '<option value="">-- Select a region first --</option>';
+                document.getElementById('parks').disabled = true;
+                document.getElementById('parks').innerHTML = '<option value="">-- Select an authority first --</option>';
+                return;
+            }
+            
+            // Update global region and GITHUB_BASE_URL
+            selectedRegion = regionId;
+            GITHUB_BASE_URL = `https://raw.githubusercontent.com/Safer-Parks/${regionId}/refs/heads/main`;
+            
+            // Clear existing authorities
+            mapState.authorities = [];
+            document.getElementById('localAuthority').disabled = false;
+            document.getElementById('localAuthority').innerHTML = '<option value="">-- Loading authorities... --</option>';
+            document.getElementById('parks').disabled = true;
+            document.getElementById('parks').innerHTML = '<option value="">-- Select an authority first --</option>';
+            
+            // Load authorities for the selected region
+            await loadAuthorities();
+        });
         
         // Handle authority selection
         document.getElementById('localAuthority').addEventListener('change', async (e) => {
@@ -4639,7 +4714,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             
             // Initialize data on page load
             (async () => {
-                await loadAuthorities();
+                await loadRegions();
+                // loadAuthorities() is called automatically when a region is selected via loadRegions()
                 await loadRegionalCyclingNetwork();
                 await loadRegionalStreetLamps();
             })();
