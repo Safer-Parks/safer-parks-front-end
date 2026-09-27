@@ -625,6 +625,17 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         (C) <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
     </div>
 
+    <!-- Announcement Modal (Message of the Day) -->
+    <div class="modal-overlay" id="modal-announcement">
+        <div class="modal-box">
+            <button class="modal-close-btn" aria-label="Close announcement">&times;</button>
+            <h3 class="modal-title" id="announcementTitle">Welcome</h3>
+            <div class="modal-content" id="announcementContent">
+                Welcome to the Safer Parks Dashboard.
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Dialogs Container -->
     <!-- Regional Level Layers -->
     <div class="modal-overlay" id="modal-colouredBasemap">
@@ -1296,8 +1307,74 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // ========================================
+        // ANNOUNCEMENT CONFIGURATION/MESSAGE OF THE DAY
+        // ========================================
+        const announcementConfig = {
+            // Set to false to disable the announcement modal entirely
+            enabled: true,
+            
+            // Unique ID for this announcement (change to show a different announcement)
+            // Users see each unique ID only once (tracked via localStorage)
+            id: 'announcement-20250927',
+            
+            // Modal title
+            title: 'Welcome to the Safer Parks Dashboard',
+            
+            // Modal content (can include HTML)
+            content: `
+                <p>Explore open data for parks across England and Wales.</p>
+                <p><strong>How to use:</strong></p>
+                <ul>
+                    <li>Select a region and authority from the left panel</li>
+                    <li>Toggle data layers in the legend to explore different insights</li>
+                </ul>
+                <p>See our Layer Guide linked in the navigation bar above, or click on the green info icon next to each entry in the legend.</p>
+            `
+        };
+        
+        // Initialize announcement modal
+        function initAnnouncementModal() {
+            if (!announcementConfig.enabled) {
+                return; // Announcement is disabled
+            }
+            
+            // Check if this announcement has been dismissed before
+            const storageName = `safer-parks-announcement-${announcementConfig.id}`;
+            const hasDismissed = localStorage.getItem(storageName);
+            
+            if (!hasDismissed) {
+                // First time seeing this announcement, populate and show it
+                const titleEl = document.getElementById('announcementTitle');
+                const contentEl = document.getElementById('announcementContent');
+                
+                if (titleEl) titleEl.textContent = announcementConfig.title;
+                if (contentEl) contentEl.innerHTML = announcementConfig.content;
+                
+                // Open the announcement modal
+                openModal('modal-announcement');
+                
+                // Mark this announcement as dismissed when closed
+                const announceModal = document.getElementById('modal-announcement');
+                const onDismiss = () => {
+                    localStorage.setItem(storageName, 'true');
+                    announceModal.removeEventListener('click', checkDismiss);
+                };
+                
+                const checkDismiss = (e) => {
+                    // Check if user clicked close button or outside modal
+                    if (e.target === announceModal || e.target.closest('.modal-close-btn')) {
+                        onDismiss();
+                    }
+                };
+                
+                announceModal.addEventListener('click', checkDismiss);
+            }
+        }
+        
         // Initialize modals after DOM is ready
         document.addEventListener('DOMContentLoaded', setupModalHandlers);
+        document.addEventListener('DOMContentLoaded', initAnnouncementModal);
         
         // Initialize map with zoom controls disabled (we'll add them to bottom-right)
         // Remote data configuration - Load from GitHub instead of local files
