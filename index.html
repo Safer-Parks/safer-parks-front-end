@@ -531,17 +531,17 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
 
                 <label for="regionSelect">Select a Region:</label>
                 <select name="regionSelect" id="regionSelect">
-                    <option value="">-- Loading regions... --</option>
+                    <option value="">Loading regions...</option>
                 </select>
 
                 <label for="localAuthority">Select an Authority/Area:</label>
                 <select name="localAuthority" id="localAuthority">
-                    <option value="">-- Select a region first --</option>
+                    <option value="">Select a region first</option>
                 </select>
 
                 <label for="parks">Parks in selected authority:</label>
                 <select name="parks" id="parks" disabled>
-                    <option value="">-- Select an authority first --</option>
+                    <option value="">Select an authority first</option>
                 </select>
 
                 <button id="loadPark" class="primary" style="width:100%" disabled>Load Park</button>
@@ -1431,7 +1431,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 // Add default option
                 const defaultOption = document.createElement('option');
                 defaultOption.value = '';
-                defaultOption.textContent = '-- Select a region --';
+                defaultOption.textContent = 'Select a region';
                 select.appendChild(defaultOption);
                 
                 // Add each region as an option
@@ -1443,11 +1443,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 });
                 
                 console.log('Loaded 14 regions');
-                
-                // Set default region to E12000003 (Yorkshire and The Humber)
-                select.value = 'E12000003';
-                // Trigger change event to load the default region
-                select.dispatchEvent(new Event('change'));
             } catch (err) {
                 console.error('Error loading regions:', err);
             }
@@ -1530,9 +1525,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             const regionId = e.target.value;
             if (!regionId) {
                 document.getElementById('localAuthority').disabled = true;
-                document.getElementById('localAuthority').innerHTML = '<option value="">-- Select a region first --</option>';
+                document.getElementById('localAuthority').innerHTML = '<option value="">Select a region first</option>';
                 document.getElementById('parks').disabled = true;
-                document.getElementById('parks').innerHTML = '<option value="">-- Select an authority first --</option>';
+                document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
                 return;
             }
             
@@ -1543,9 +1538,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             // Clear existing authorities
             mapState.authorities = [];
             document.getElementById('localAuthority').disabled = false;
-            document.getElementById('localAuthority').innerHTML = '<option value="">-- Loading authorities... --</option>';
+            document.getElementById('localAuthority').innerHTML = '<option value="">Loading authorities... </option>';
             document.getElementById('parks').disabled = true;
-            document.getElementById('parks').innerHTML = '<option value="">-- Select an authority first --</option>';
+            document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
             
             // Load authorities for the selected region
             await loadAuthorities();
@@ -1556,7 +1551,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             const authorityId = e.target.value;
             if (!authorityId) {
                 document.getElementById('parks').disabled = true;
-                document.getElementById('parks').innerHTML = '<option value="">-- Select an authority first --</option>';
+                document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
                 return;
             }
             
@@ -1807,7 +1802,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 
                 // Populate parks dropdown
                 const parksSelect = document.getElementById('parks');
-                parksSelect.innerHTML = '<option value="">-- Select a park --</option>';
+                parksSelect.innerHTML = '<option value="">Select a park</option>';
                 
                 parks.forEach((park, index) => {
                     const option = document.createElement('option');
