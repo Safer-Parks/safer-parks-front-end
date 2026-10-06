@@ -2102,7 +2102,7 @@ function getParkFeatureStyle(featureName) {
     if (!featureName) {
         return { 
             fillColor: '#E87EA1', 
-            color: '#C2527A', // Darker outline
+            color: '#C2527A', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: null 
@@ -2111,66 +2111,60 @@ function getParkFeatureStyle(featureName) {
     
     const name = featureName.toLowerCase();
     
-    // Garden
     if (name.includes('garden')) {
         return { 
             fillColor: '#90EE90', 
-            color: '#2D8D2D', // Darker green outline
+            color: '#2D8D2D', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: '5,5' 
         };
     }
     
-    // Pitch, Track, Sports Centre
     if (name.includes('pitch') || name.includes('track') || name.includes('sports centre')) {
         return { 
             fillColor: '#714a6d', 
-            color: '#4A2A47', // Darker purple outline
+            color: '#4A2A47', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: '10,5' 
         };
     }
     
-    // Parking
     if (name.includes('parking')) {
         return { 
             fillColor: '#3388ff', 
-            color: '#1a5cc4', // Darker blue outline
+            color: '#1a5cc4', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: null 
         };
     }
     
-    // Monuments
     if (name.includes('monument')) {
         return { 
             fillColor: '#999999', 
-            color: '#4d4d4d', // Darker grey outline
+            color: '#4d4d4d', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: null 
         };
     }
     
-    // Cafes
     if (name.includes('cafe') || name.includes('coffee')) {
         return { 
             fillColor: '#FF9800', 
-            color: '#E65100', // Darker orange outline
+            color: '#E65100', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: null 
         };
     }
     
-    // Toilets
     if (name.includes('toilet') || name.includes('wc')) {
         return { 
             fillColor: '#068D9D', 
-            color: '#043F4B', // Darker teal outline
+            color: '#043F4B', 
             weight: 2, 
             fillOpacity: 0.8,
             dashArray: null 

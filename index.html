@@ -3237,6 +3237,21 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return label || 'Feature';
         }
         
+        // Qualitative, colour-blind-friendly palette (Okabe-Ito plus Tol extensions)
+        const FEATURE_TYPE_PALETTE = [
+            '#0072B2', '#E69F00', '#009E73', '#CC79A7', '#56B4E9', '#D55E00',
+            '#F0E442', '#882255', '#44AA99', '#117733', '#AA4499', '#999933'
+        ];
+        
+        // Assign each unique feature type a colour in alphabetical order
+        function buildFeatureTypeColours(labels) {
+            const colours = {};
+            Array.from(new Set(labels)).sort((a, b) => a.localeCompare(b)).forEach((label, i) => {
+                colours[label] = FEATURE_TYPE_PALETTE[i % FEATURE_TYPE_PALETTE.length];
+            });
+            return colours;
+        }
+        
         // Load Features In Parks dataset
         async function loadFeaturesInParks(authority) {
             try {
@@ -3264,6 +3279,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     
                     // Create feature group for features in parks
                     const featuresGroup = L.featureGroup();
+                    const typeColours = buildFeatureTypeColours(
+                        featuresData.features.map(f => getFeatureLabelIn(f.properties || {}))
+                    );
                     
                     // Use proj4.js for coordinate transformation (already loaded in HTML)
                     featuresData.features.forEach(feature => {
@@ -3277,62 +3295,65 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             
                             if (feature.geometry.type === 'Point') {
                                 const coords = transformedGeometry.coordinates;
+                                const featureName = getFeatureLabelIn(feature.properties);
+                                const colour = typeColours[featureName];
                                 const marker = L.circleMarker([coords[1], coords[0]], {
                                     radius: 5,
-                                    color: '#4CAF50',
+                                    color: colour,
                                     weight: 2,
-                                    opacity: 0.8,
+                                    opacity: 0.9,
                                     fill: true,
-                                    fillColor: '#4CAF50',
-                                    fillOpacity: 0.3
+                                    fillColor: colour,
+                                    fillOpacity: 0.5
                                 });
                                 
-                                const featureName = getFeatureLabelIn(feature.properties);
                                 marker.bindTooltip(featureName, {
                                     permanent: false,
                                     direction: 'top',
                                     className: 'features-in-parks-tooltip'
                                 });
                                 
+                                marker._featureType = featureName;
                                 featuresGroup.addLayer(marker);
                             } else if (feature.geometry.type === 'Polygon') {
                                 const coords = transformedGeometry.coordinates[0].map(c => [c[1], c[0]]);
+                                const featureName = getFeatureLabelIn(feature.properties);
+                                const colour = typeColours[featureName];
                                 const polygon = L.polygon(coords, {
-                                    color: '#4CAF50',
+                                    color: colour,
                                     weight: 2,
-                                    opacity: 0.8,
-                                    dashArray: '5, 5',
+                                    opacity: 0.9,
                                     fill: true,
-                                    fillColor: '#4CAF50',
-                                    fillOpacity: 0.05,
+                                    fillColor: colour,
+                                    fillOpacity: 0.45,
                                     lineCap: 'butt'
                                 });
                                 
-                                const featureName = getFeatureLabelIn(feature.properties);
                                 polygon.bindTooltip(featureName, {
                                     permanent: false,
                                     direction: 'top',
                                     className: 'features-in-parks-tooltip'
                                 });
                                 
+                                polygon._featureType = featureName;
                                 featuresGroup.addLayer(polygon);
                             } else if (feature.geometry.type === 'LineString') {
                                 const coords = transformedGeometry.coordinates.map(c => [c[1], c[0]]);
+                                const featureName = getFeatureLabelIn(feature.properties);
                                 const line = L.polyline(coords, {
-                                    color: '#4CAF50',
-                                    weight: 2,
-                                    opacity: 0.8,
-                                    dashArray: '5, 5',
+                                    color: typeColours[featureName],
+                                    weight: 3,
+                                    opacity: 0.9,
                                     lineCap: 'butt'
                                 });
                                 
-                                const featureName = getFeatureLabelIn(feature.properties);
                                 line.bindTooltip(featureName, {
                                     permanent: false,
                                     direction: 'top',
                                     className: 'features-in-parks-tooltip'
                                 });
                                 
+                                line._featureType = featureName;
                                 featuresGroup.addLayer(line);
                             }
                         } catch (e) {
@@ -3345,6 +3366,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         id: 'features-in-parks',
                         name: 'Park Features',
                         layer: featuresGroup,
+                        typeColours: typeColours,
                         visible: false
                     };
                     
@@ -4216,6 +4238,14 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 });
             }
             
+            if (mapState.featuresInParksLayer && mapState.featuresInParksLayer.visible) {
+                visibleLayers.push({
+                    id: 'features-in-parks',
+                    name: 'Park Features',
+                    type: 'features-in-parks'
+                });
+            }
+            
             if (mapState.demographicsLayer && mapState.demographicsLayer.visible) {
                 visibleLayers.push({
                     id: 'demographics',
@@ -4640,6 +4670,52 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     
                     lampsGroup.appendChild(lampsMarker);
                     legendItems.appendChild(lampsGroup);
+                    return;
+                } else if (layer.type === 'features-in-parks') {
+                    // One entry per feature type present in this authority's data
+                    const featuresGroup = document.createElement('div');
+                    featuresGroup.style.marginBottom = '0.75rem';
+                    
+                    const heading = document.createElement('span');
+                    heading.style.fontSize = '0.85rem';
+                    heading.style.fontWeight = '500';
+                    heading.style.marginBottom = '0.25rem';
+                    heading.style.display = 'block';
+                    heading.textContent = layer.name;
+                    featuresGroup.appendChild(heading);
+                    
+                    const colours = mapState.featuresInParksLayer.typeColours || {};
+                    // Only list types located within the selected park's bounds
+                    const parkBounds = mapState.parksLayer ? mapState.parksLayer.getBounds() : null;
+                    const typesInPark = new Set();
+                    mapState.featuresInParksLayer.layer.eachLayer(l => {
+                        const centre = l.getLatLng ? l.getLatLng() : l.getBounds().getCenter();
+                        if (!parkBounds || !parkBounds.isValid() || parkBounds.contains(centre)) {
+                            typesInPark.add(l._featureType);
+                        }
+                    });
+                    Array.from(typesInPark).sort((a, b) => a.localeCompare(b)).forEach(typeName => {
+                        const row = document.createElement('div');
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.style.gap = '0.5rem';
+                        row.style.marginBottom = '0.25rem';
+                        row.style.fontSize = '0.85rem';
+                        
+                        const swatch = document.createElement('div');
+                        swatch.style.width = '16px';
+                        swatch.style.height = '16px';
+                        swatch.style.flexShrink = '0';
+                        swatch.style.borderRadius = '2px';
+                        swatch.style.backgroundColor = colours[typeName];
+                        swatch.style.border = '1px solid rgba(0,0,0,0.4)';
+                        
+                        row.appendChild(swatch);
+                        row.appendChild(document.createTextNode(typeName));
+                        featuresGroup.appendChild(row);
+                    });
+                    
+                    legendItems.appendChild(featuresGroup);
                     return;
                 } else if (layer.type === 'demographics') {
                     // Create demographics legend
