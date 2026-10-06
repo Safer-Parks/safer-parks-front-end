@@ -330,8 +330,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
 
         /* Features tooltip styling */
         .features-in-parks-tooltip {
-            background: rgba(76, 175, 80, 0.95) !important;
-            color: white !important;
+            background: var(--feature-colour, rgba(76, 175, 80, 0.95)) !important;
+            color: var(--feature-text, white) !important;
             border-radius: 4px;
             padding: 8px 12px !important;
             font-size: 0.75rem;
@@ -339,7 +339,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
 
         .features-in-parks-tooltip::before {
-            border-top-color: rgba(76, 175, 80, 0.95) !important;
+            border-top-color: var(--feature-colour, rgba(76, 175, 80, 0.95)) !important;
         }
 
         .features-near-parks-tooltip {
@@ -3252,6 +3252,30 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return colours;
         }
         
+        // Pick black or white text for readable contrast on a hex background
+        function getContrastTextColour(hex) {
+            const n = parseInt(hex.slice(1), 16);
+            const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+            const L = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+            return L > 0.4 ? '#000000' : '#ffffff';
+        }
+        
+        // Tooltip class per feature colour; CSS rules are injected once per colour
+        const injectedTooltipClasses = new Set();
+        function getFeatureTooltipClass(colour) {
+            const cls = 'fip-tooltip-' + colour.slice(1).toLowerCase();
+            if (!injectedTooltipClasses.has(cls)) {
+                injectedTooltipClasses.add(cls);
+                const style = document.createElement('style');
+                style.textContent =
+                    '.leaflet-tooltip.' + cls + ' { background: ' + colour + ' !important; ' +
+                    'border-color: ' + colour + ' !important; color: ' + getContrastTextColour(colour) + ' !important; } ' +
+                    '.leaflet-tooltip-top.' + cls + '::before { border-top-color: ' + colour + ' !important; }';
+                document.head.appendChild(style);
+            }
+            return 'features-in-parks-tooltip ' + cls;
+        }
+        
         // Load Features In Parks dataset
         async function loadFeaturesInParks(authority) {
             try {
@@ -3310,7 +3334,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 marker.bindTooltip(featureName, {
                                     permanent: false,
                                     direction: 'top',
-                                    className: 'features-in-parks-tooltip'
+                                    className: getFeatureTooltipClass(colour)
                                 });
                                 
                                 marker._featureType = featureName;
@@ -3332,7 +3356,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 polygon.bindTooltip(featureName, {
                                     permanent: false,
                                     direction: 'top',
-                                    className: 'features-in-parks-tooltip'
+                                    className: getFeatureTooltipClass(colour)
                                 });
                                 
                                 polygon._featureType = featureName;
@@ -3340,8 +3364,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             } else if (feature.geometry.type === 'LineString') {
                                 const coords = transformedGeometry.coordinates.map(c => [c[1], c[0]]);
                                 const featureName = getFeatureLabelIn(feature.properties);
+                                const colour = typeColours[featureName];
                                 const line = L.polyline(coords, {
-                                    color: typeColours[featureName],
+                                    color: colour,
                                     weight: 3,
                                     opacity: 0.9,
                                     lineCap: 'butt'
@@ -3350,7 +3375,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 line.bindTooltip(featureName, {
                                     permanent: false,
                                     direction: 'top',
-                                    className: 'features-in-parks-tooltip'
+                                    className: getFeatureTooltipClass(colour)
                                 });
                                 
                                 line._featureType = featureName;
