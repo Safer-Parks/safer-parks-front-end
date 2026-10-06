@@ -6,3 +6,4 @@ Note that this will not work locally without a server, e.g. the index.html will 
 
 - Includes message of the day option
 - All regions accessible via one front-end site
+- Park features: colour coded and added to legend programatically
