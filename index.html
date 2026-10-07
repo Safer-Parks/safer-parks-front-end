@@ -805,7 +805,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <div class="modal-overlay" id="modal-parkFeatures">
         <div class="modal-box">
             <button class="modal-close-btn" aria-label="Close modal">&times;</button>
-            <h3 class="modal-title">Features in and near parks</h3>
+            <h3 class="modal-title">Features and facilities</h3>
             <div class="modal-content" id="content-parkFeatures">
                 <section id="what-is-this-layer-7" class="level3">
             <h3 class="anchored" data-anchor-id="what-is-this-layer-7">What is this layer?</h3>
@@ -2026,7 +2026,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
 
             mapState.featuresInAndNearParksLayer = {
                 id: 'features-in-and-near-parks',
-                name: 'Features in and near parks',
+                name: 'Features and facilities',
                 layer: combinedFeatures,
                 visible: false
             };
@@ -3988,7 +3988,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     }
                     layerObj.visible = visible;
                 } catch (error) {
-                    console.error('Error toggling features in and near parks layer:', error);
+                    console.error('Error toggling Features and facilities layer:', error);
                 }
             } else if (layerId === 'demographics' && mapState.demographicsLayer) {
                 const layerObj = mapState.demographicsLayer;
@@ -4185,7 +4185,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             if (mapState.featuresInAndNearParksLayer && mapState.featuresInAndNearParksLayer.visible) {
                 visibleLayers.push({
                     id: 'features-in-and-near-parks',
-                    name: 'Features in and near parks',
+                    name: 'Features and facilities',
                     type: 'features-in-and-near-parks'
                 });
             }
