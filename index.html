@@ -57,6 +57,40 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             width: 100%;
             height: 100vh;
         }
+
+        #loadingNotice {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1.1rem;
+            background: #fff;
+            color: #30452d;
+            font-weight: 600;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        #loadingNotice.visible {
+            display: flex;
+        }
+
+        #loadingNotice .spinner {
+            width: 1.1rem;
+            height: 1.1rem;
+            border: 3px solid #d6e0cf;
+            border-top-color: #4F6C37;
+            border-radius: 50%;
+            animation: loading-spin 0.8s linear infinite;
+        }
+
+        @keyframes loading-spin {
+            to { transform: rotate(360deg); }
+        }
         
         aside {
             background: white;
@@ -577,6 +611,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
 
     <!-- Map Container -->
     <main>
+        <div id="loadingNotice" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span id="loadingNoticeText">Loading...</span></div>
         <div id="map"></div>
     </main>
 
@@ -1475,6 +1510,20 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return `${GITHUB_BASE_URL}/${authorityId}/`;
         }
         
+        // Loading notice (counter allows overlapping operations)
+        let loadingCount = 0;
+        function showLoading(message) {
+            loadingCount++;
+            document.getElementById('loadingNoticeText').textContent = message;
+            document.getElementById('loadingNotice').classList.add('visible');
+        }
+        function hideLoading() {
+            loadingCount = Math.max(0, loadingCount - 1);
+            if (loadingCount === 0) {
+                document.getElementById('loadingNotice').classList.remove('visible');
+            }
+        }
+
         // Load regions and populate the region dropdown
         async function loadRegions() {
             try {
@@ -1630,7 +1679,12 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             mapState.currentAuthority = authority;
             
             // Load parks for this authority
-            await loadParksForAuthority(authority);
+            showLoading(`Loading ${authority.name}...`);
+            try {
+                await loadParksForAuthority(authority);
+            } finally {
+                hideLoading();
+            }
         });
         
         // Transform coordinates from EPSG:27700 to EPSG:4326
@@ -2070,6 +2124,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 console.error('Park geometry not found at index', selectedIndex);
             }
             
+            showLoading(`Loading ${selectedPark ? selectedPark.name : 'park'}...`);
+            try {
+            
             // Remove existing park layer
             if (mapState.parksLayer) {
                 map.removeLayer(mapState.parksLayer);
@@ -2210,6 +2267,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
             populateLayerToggles(layerToggles);
             updateLegend();
+            } finally {
+                hideLoading();
+            }
         });
         
         // Load park entrances for selected park
