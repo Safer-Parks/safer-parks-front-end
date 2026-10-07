@@ -1695,6 +1695,27 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
         
         // Load parks GeoJSON for selected authority
+        function getParkSizeDetails(properties) {
+            const areaValue = properties['Total Area (m²)'] ??
+                properties.area_m2 ??
+                properties['Area (m2)'] ??
+                properties.total_area;
+            const areaM2 = areaValue === null || areaValue === undefined
+                ? NaN
+                : Number(String(areaValue).replace(/,/g, '').trim());
+
+            if (!Number.isFinite(areaM2) || areaM2 < 0) {
+                return { areaM2: null, sizeCategory: 'Area unavailable' };
+            }
+            if (areaM2 <= 5000) {
+                return { areaM2, sizeCategory: 'Pocket park' };
+            }
+            if (areaM2 > 100000) {
+                return { areaM2, sizeCategory: 'Large park' };
+            }
+            return { areaM2, sizeCategory: 'Medium park' };
+        }
+
         async function loadParksForAuthority(authority) {
             if (mapState.featuresInAndNearParksLayer) {
                 map.removeLayer(mapState.featuresInAndNearParksLayer.layer);
@@ -1739,14 +1760,20 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 }
                 
                 // Extract park names from features and transform coordinates
-                const parks = parksData.features.map(feature => ({
-                    name: feature.properties['Park Name'] || feature.properties.name || `Park ${feature.properties.park_offical_id || 'Unknown'}`,
-                    id: feature.properties.park_offical_id,
-                    newParkId: feature.properties.new_park_id, // New park ID for visibility file lookup
-                    sourceGeometry: feature.geometry,
-                    geometry: transformCoordinates(feature.geometry),
-                    properties: feature.properties
-                }));
+                const parks = parksData.features.map(feature => {
+                    const properties = feature.properties || {};
+                    const sizeDetails = getParkSizeDetails(properties);
+                    return {
+                        name: properties['Park Name'] || properties.name || `Park ${properties.park_offical_id || 'Unknown'}`,
+                        id: properties.park_offical_id,
+                        newParkId: properties.new_park_id,
+                        sourceGeometry: feature.geometry,
+                        geometry: transformCoordinates(feature.geometry),
+                        areaM2: sizeDetails.areaM2,
+                        sizeCategory: sizeDetails.sizeCategory,
+                        properties
+                    };
+                });
                 
                 // Sort by name
                 parks.sort((a, b) => a.name.localeCompare(b.name));
@@ -1823,7 +1850,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         geometry: park.geometry,
                         properties: { 
                             name: park.name,
-                            area: park.properties['Total Area (m²)'] || park.properties.area_m2 || park.properties['Area (m2)'] || park.properties.total_area || null
+                            area: park.areaM2,
+                            sizeCategory: park.sizeCategory
                         }
                     }))
                 };
@@ -1840,12 +1868,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         
                         // Add hover tooltip with park name and area
                         const parkName = feature.properties.name;
-                        let tooltipContent = parkName;
-                        
-                        if (feature.properties.area !== null && feature.properties.area !== undefined) {
-                            const areaM2 = parseFloat(feature.properties.area);
-                            tooltipContent = `<strong>${parkName}</strong><br/>Area: ${areaM2.toLocaleString('en-GB', { maximumFractionDigits: 0 })} m²`;
-                        }
+                        const areaLabel = feature.properties.area === null
+                            ? 'Area unavailable'
+                            : `Area: ${feature.properties.area.toLocaleString('en-GB', { maximumFractionDigits: 0 })} m²`;
+                        let tooltipContent = `<strong>${parkName}</strong><br/>${areaLabel}<br/><span style="display:inline-block;margin-top:0.25rem;padding:0.15rem 0.4rem;border-radius:0.25rem;background:#e8eee4;color:#30452d;font-weight:600;">${feature.properties.sizeCategory}</span>`;
                         
                         // Find the park ID for this feature
                         const parkData = mapState.sortedParks.find(p => p.name === parkName);
