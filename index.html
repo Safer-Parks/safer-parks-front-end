@@ -566,7 +566,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 
                 <hr>
                 <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; line-height: 1.4;">
-                    Please be patient: layers may take a few seconds to load, especially when you select a specific park.
+                    Please be patient: layers may take a few seconds to load.
                 </div>
                 
                 <label class="toggle-label">
@@ -1984,7 +1984,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 
                 // Populate parks dropdown
                 const parksSelect = document.getElementById('parks');
-                parksSelect.innerHTML = '<option value="">Select a park</option>';
+                parksSelect.innerHTML = '<option value="">Select a park or choose on the map</option>';
                 
                 parks.forEach((park, index) => {
                     const option = document.createElement('option');
