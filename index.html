@@ -1735,6 +1735,14 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
 
         async function loadParksForAuthority(authority) {
+            // Clear the previous area's overview, then reuse the reset handler
+            // to remove any park-specific layers, toggles and legend.
+            if (mapState.allParksLayer) {
+                map.removeLayer(mapState.allParksLayer);
+                mapState.allParksLayer = null;
+            }
+            document.getElementById('resetMapBtn').click();
+
             if (mapState.featuresInAndNearParksLayer) {
                 map.removeLayer(mapState.featuresInAndNearParksLayer.layer);
                 mapState.featuresInAndNearParksLayer = null;
