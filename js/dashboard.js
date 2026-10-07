@@ -353,6 +353,10 @@ const map = L.map('map', {
     attributionControl: false
 }).setView(WYCA_COORDS, WYCA_ZOOM);
 
+// Dedicated pane keeps the park boundary above all other vector layers
+map.createPane('parkBoundaryPane');
+map.getPane('parkBoundaryPane').style.zIndex = 450;
+
 // Add zoom event listener to switch between heatmap and markers for lighting and trees layers
 map.on('zoomend', function() {
     const currentZoom = map.getZoom();
@@ -1469,6 +1473,7 @@ async function loadParkData(parkName) {
                             }
 
                             layer = L.geoJSON(data, {
+                                pane: layerInfo.id === 'park-boundary' ? 'parkBoundaryPane' : 'overlayPane',
                                 style: function(feature) {
                                     // Only apply style for non-point features
                                     if (feature.geometry.type !== 'Point') {
@@ -1549,6 +1554,13 @@ async function loadParkData(parkName) {
                         
                         // Only add park-boundary to map by default
                         if (layerInfo.id === 'park-boundary') {
+                            // White casing under the green line keeps the boundary visible on any background
+                            const casing = L.geoJSON(data, {
+                                pane: 'parkBoundaryPane',
+                                interactive: false,
+                                style: { color: '#fff', weight: 5, opacity: 1, fill: false }
+                            });
+                            layer = L.featureGroup([casing, layer]);
                             layer.addTo(map);
                         }
                         
@@ -2105,7 +2117,7 @@ function getStyleForFile(layerId, feature) {
             const color = turboColormap(segmentValue);
             return { color: color, weight: 3, opacity: 0.8 };
         case 'park-boundary':
-            return { color: '#31a354', weight: 2, fillOpacity: 0.1 };
+            return { color: '#31a354', weight: 3, opacity: 1, fillColor: '#31a354', fillOpacity: 0.1 };
         case 'park-features':
             return { color: '#714a6d', weight: 2, fillColor: '#714a6d', fillOpacity: 0.3, opacity: 0.7 };
         case 'buffer':

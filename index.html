@@ -1359,6 +1359,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         const map = L.map('map', {
             zoomControl: false
         }).setView([54.0, -1.5], 7);
+
+        // Dedicated pane keeps the park boundary above all other vector layers
+        map.createPane('parkBoundaryPane');
+        map.getPane('parkBoundaryPane').style.zIndex = 450;
         
         // Add zoom controls to bottom-right
         L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -2059,19 +2063,21 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             };
             
             // Create layer with prominent styling
-            mapState.parksLayer = L.geoJSON(parkFeature, {
-                style: {
-                    color: '#4F6C37',
-                    weight: 3,
-                    opacity: 0.9,
-                    fillOpacity: 0,
-                    fillColor: '#4F6C37'
-                },
+            // White casing under a green line keeps the boundary visible on any background
+            const boundaryCasing = L.geoJSON(parkFeature, {
+                pane: 'parkBoundaryPane',
+                interactive: false,
+                style: { color: '#fff', weight: 5, opacity: 1, fill: false }
+            });
+            const boundaryLine = L.geoJSON(parkFeature, {
+                pane: 'parkBoundaryPane',
+                style: { color: '#4F6C37', weight: 3, opacity: 1, fill: false },
                 onEachFeature: (feature, layer) => {
                     layer.bindPopup(`<strong>${feature.properties.name}</strong>`, { closeButton: true });
                     layer.openPopup();
                 }
-            }).addTo(map);
+            });
+            mapState.parksLayer = L.featureGroup([boundaryCasing, boundaryLine]).addTo(map);
             
             // Store layer info for toggling
             mapState.parkBoundaryLayer = {
