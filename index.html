@@ -508,9 +508,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     <span class="accordion-icon" aria-hidden="true"></span>
                 </button>
             </h2>
-            <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; line-height: 1.4;">
-                    Please be patient: layers may take a few seconds to load, especially when you select a specific park.
-            </div>
             <div id="controls-content" 
                  role="region" 
                  aria-labelledby="controls-heading" 
@@ -534,6 +531,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <button id="loadPark" class="primary" style="width:100%" disabled>Load Park</button>
                 
                 <hr>
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; line-height: 1.4;">
+                    Please be patient: layers may take a few seconds to load, especially when you select a specific park.
+                </div>
                 
                 <label class="toggle-label">
                     <input type="checkbox" id="detailedToggle" role="switch" aria-label="Toggle detailed basemap on or off"/>
@@ -1983,8 +1983,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             weight: 2,
                             opacity: 0.9,
                             fillColor: category.color,
-                            fillOpacity: isNearPark ? 0.1 : 0.45,
-                            dashArray: isNearPark ? '5, 5' : null
+                            fillOpacity: 0.45,
+                            dashArray: null
                         };
                         const featureLayer = L.geoJSON({
                             type: 'Feature',
