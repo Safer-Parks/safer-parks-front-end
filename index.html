@@ -342,19 +342,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             border-top-color: var(--feature-colour, rgba(76, 175, 80, 0.95)) !important;
         }
 
-        .features-near-parks-tooltip {
-            background: rgba(255, 152, 0, 0.95) !important;
-            color: white !important;
-            border-radius: 4px;
-            padding: 8px 12px !important;
-            font-size: 0.75rem;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .features-near-parks-tooltip::before {
-            border-top-color: rgba(255, 152, 0, 0.95) !important;
-        }
-
         /* Toggle label spacing */
         .toggle-label {
             display: flex;
@@ -818,11 +805,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <div class="modal-overlay" id="modal-parkFeatures">
         <div class="modal-box">
             <button class="modal-close-btn" aria-label="Close modal">&times;</button>
-            <h3 class="modal-title">Park Features</h3>
+            <h3 class="modal-title">Features in and near parks</h3>
             <div class="modal-content" id="content-parkFeatures">
                 <section id="what-is-this-layer-7" class="level3">
             <h3 class="anchored" data-anchor-id="what-is-this-layer-7">What is this layer?</h3>
-            <p>This layer shows facilities within parks, such as gardens, sports pitches, car parking, monuments, cafes, and other amenities. This layer is displayed as points and polygons.</p>
+            <p>This layer combines features within parks and nearby features. For the selected park, it shows features whose mapped extents intersect the park boundary or an 800 m buffer around it. The buffer is applied as an efficient expanded bounding box, so features near the corners of that box may be slightly farther than 800 m away.</p>
             </section>
             <section id="how-to-use-this-information-7" class="level3">
             <h3 class="anchored" data-anchor-id="how-to-use-this-information-7">How to use this information</h3>
@@ -843,19 +830,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <h3 class="anchored" data-anchor-id="where-is-the-data-from-7">Where is the data from?</h3>
             <p>This data comes from combined Ordnance Survey and OpenStreetMap data.</p>
             </section>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-featuresNearParks">
-        <div class="modal-box">
-            <button class="modal-close-btn" aria-label="Close modal">&times;</button>
-            <h3 class="modal-title">Features Near Parks</h3>
-            <div class="modal-content" id="content-featuresNearParks">
-                Features and amenities located outside but in close proximity to the park.
-                <hr>
-                This is not an analytical layer, but it can help you explore the surrounding area and understand how nearby features may influence park use. You can click on a feature to view its details.
-                
             </div>
         </div>
     </div>
@@ -1250,6 +1224,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/dist/chroma.min.js"></script>
     
     <!-- Main Application Script -->
+    <script src="js/park-feature-categories.js"></script>
     <script>
         // Initialize Proj4 for coordinate transformation
         let toWGS84 = null;
@@ -1486,6 +1461,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             streetLampsLayer: null,
             featuresInParksLayer: null,
             featuresNearParksLayer: null,
+            featuresInAndNearParksLayer: null,
             supplementalLightingLayer: null
         };
         
@@ -1680,6 +1656,21 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             type: 'Polygon',
                             coordinates: geom.coordinates.map(ring => ring.map(transformPoint))
                         };
+                    } else if (geom.type === 'LineString') {
+                        return {
+                            type: 'LineString',
+                            coordinates: geom.coordinates.map(transformPoint)
+                        };
+                    } else if (geom.type === 'MultiLineString') {
+                        return {
+                            type: 'MultiLineString',
+                            coordinates: geom.coordinates.map(line => line.map(transformPoint))
+                        };
+                    } else if (geom.type === 'MultiPoint') {
+                        return {
+                            type: 'MultiPoint',
+                            coordinates: geom.coordinates.map(transformPoint)
+                        };
                     } else if (geom.type === 'MultiPolygon') {
                         return {
                             type: 'MultiPolygon',
@@ -1705,6 +1696,13 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         
         // Load parks GeoJSON for selected authority
         async function loadParksForAuthority(authority) {
+            if (mapState.featuresInAndNearParksLayer) {
+                map.removeLayer(mapState.featuresInAndNearParksLayer.layer);
+                mapState.featuresInAndNearParksLayer = null;
+            }
+            mapState.featuresInParksLayer = null;
+            mapState.featuresNearParksLayer = null;
+
             try {
                 const authPath = getAuthorityPath(authority.id);
                 const authName = authority.name;
@@ -1745,6 +1743,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     name: feature.properties['Park Name'] || feature.properties.name || `Park ${feature.properties.park_offical_id || 'Unknown'}`,
                     id: feature.properties.park_offical_id,
                     newParkId: feature.properties.new_park_id, // New park ID for visibility file lookup
+                    sourceGeometry: feature.geometry,
                     geometry: transformCoordinates(feature.geometry),
                     properties: feature.properties
                 }));
@@ -1901,7 +1900,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 
                 console.log(`Loaded ${parks.length} parks from ${successFile}`);
                 
-                // Load features for this authority
+                // Cache both feature datasets for filtering around the selected park.
                 await loadFeaturesInParks(authority);
                 await loadFeaturesNearParks(authority);
             } catch (error) {
@@ -1909,6 +1908,100 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // Combine both datasets, filtering in EPSG:27700 before projecting
+        // selected features for display.
+        function createFeaturesInAndNearParkLayer(parkGeometry) {
+            if (mapState.featuresInAndNearParksLayer) {
+                map.removeLayer(mapState.featuresInAndNearParksLayer.layer);
+            }
+
+            const parkBounds = getFeatureCoordinateBounds(parkGeometry);
+            if (!parkBounds) {
+                console.warn('Cannot filter nearby features: selected park bounds are invalid');
+                mapState.featuresInAndNearParksLayer = null;
+                return;
+            }
+
+            const bufferedBounds = [
+                parkBounds[0] - 800,
+                parkBounds[1] - 800,
+                parkBounds[2] + 800,
+                parkBounds[3] + 800
+            ];
+            const combinedFeatures = L.featureGroup();
+
+            [
+                [mapState.featuresInParksLayer, false],
+                [mapState.featuresNearParksLayer, true]
+            ].forEach(([sourceLayer, isNearPark]) => {
+                if (!sourceLayer) return;
+
+                sourceLayer.features.forEach(({ feature, bounds }) => {
+                    if (bounds[0] > bufferedBounds[2] || bounds[2] < bufferedBounds[0] ||
+                        bounds[1] > bufferedBounds[3] || bounds[3] < bufferedBounds[1]) {
+                        return;
+                    }
+
+                    try {
+                        const featureName = isNearPark
+                            ? getFeatureLabelNear(feature.properties || {})
+                            : getFeatureLabelIn(feature.properties || {});
+                        const category = window.categoriseParkFeature(featureName);
+                        if (!category) return;
+
+                        const projectedGeometry = transformCoordinates(feature.geometry);
+                        if (!projectedGeometry) return;
+
+                        const featureStyle = {
+                            color: category.color,
+                            weight: 2,
+                            opacity: 0.9,
+                            fillColor: category.color,
+                            fillOpacity: isNearPark ? 0.1 : 0.45,
+                            dashArray: isNearPark ? '5, 5' : null
+                        };
+                        const featureLayer = L.geoJSON({
+                            type: 'Feature',
+                            geometry: projectedGeometry,
+                            properties: feature.properties || {}
+                        }, {
+                            style: featureStyle,
+                            pointToLayer: (_feature, latlng) => L.circleMarker(latlng, {
+                                radius: 5,
+                                color: category.color,
+                                weight: 2,
+                                opacity: 0.9,
+                                fillColor: category.color,
+                                fillOpacity: 0.5
+                            }),
+                            onEachFeature: (_feature, layer) => {
+                                layer.bindTooltip(featureName, {
+                                    permanent: false,
+                                    direction: 'top',
+                                    className: getFeatureTooltipClass(category.color)
+                                });
+                                layer._featureType = category.name;
+                            }
+                        });
+
+                        featureLayer.eachLayer(layer => {
+                            layer._featureType = category.name;
+                            combinedFeatures.addLayer(layer);
+                        });
+                    } catch (error) {
+                        console.warn('Error processing nearby park feature:', error);
+                    }
+                });
+            });
+
+            mapState.featuresInAndNearParksLayer = {
+                id: 'features-in-and-near-parks',
+                name: 'Features in and near parks',
+                layer: combinedFeatures,
+                visible: false
+            };
+        }
+
         // Load selected park on map
         document.getElementById('loadPark').addEventListener('click', async () => {
             const parksSelect = document.getElementById('parks');
@@ -1961,6 +2054,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 layer: mapState.parksLayer,
                 visible: true
             };
+
+            createFeaturesInAndNearParkLayer(selectedPark.sourceGeometry);
             
             mapState.otherParksLayer = {
                 id: 'all-parks',
@@ -2053,11 +2148,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             if (mapState.foliageTallLayer) {
                 layerToggles.push(mapState.foliageTallLayer);
             }
-            if (mapState.featuresInParksLayer) {
-                layerToggles.push(mapState.featuresInParksLayer);
-            }
-            if (mapState.featuresNearParksLayer) {
-                layerToggles.push(mapState.featuresNearParksLayer);
+            if (mapState.featuresInAndNearParksLayer) {
+                layerToggles.push(mapState.featuresInAndNearParksLayer);
             }
             if (mapState.demographicsLayer) {
                 layerToggles.push(mapState.demographicsLayer);
@@ -3237,21 +3329,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return label || 'Feature';
         }
         
-        // Qualitative, colour-blind-friendly palette (Okabe-Ito plus Tol extensions)
-        const FEATURE_TYPE_PALETTE = [
-            '#0072B2', '#E69F00', '#009E73', '#CC79A7', '#56B4E9', '#D55E00',
-            '#F0E442', '#882255', '#44AA99', '#117733', '#AA4499', '#999933'
-        ];
-        
-        // Assign each unique feature type a colour in alphabetical order
-        function buildFeatureTypeColours(labels) {
-            const colours = {};
-            Array.from(new Set(labels)).sort((a, b) => a.localeCompare(b)).forEach((label, i) => {
-                colours[label] = FEATURE_TYPE_PALETTE[i % FEATURE_TYPE_PALETTE.length];
-            });
-            return colours;
-        }
-        
         // Pick black or white text for readable contrast on a hex background
         function getContrastTextColour(hex) {
             const n = parseInt(hex.slice(1), 16);
@@ -3276,131 +3353,51 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return 'features-in-parks-tooltip ' + cls;
         }
         
-        // Load Features In Parks dataset
+        function getFeatureCoordinateBounds(geometry) {
+            const bounds = [Infinity, Infinity, -Infinity, -Infinity];
+            const visit = coordinates => {
+                if (!Array.isArray(coordinates)) return;
+                if (typeof coordinates[0] === 'number' && typeof coordinates[1] === 'number') {
+                    bounds[0] = Math.min(bounds[0], coordinates[0]);
+                    bounds[1] = Math.min(bounds[1], coordinates[1]);
+                    bounds[2] = Math.max(bounds[2], coordinates[0]);
+                    bounds[3] = Math.max(bounds[3], coordinates[1]);
+                    return;
+                }
+                coordinates.forEach(visit);
+            };
+
+            visit(geometry && geometry.coordinates);
+            return bounds[0] === Infinity ? null : bounds;
+        }
+
+        function indexFeatureDataset(features) {
+            return features.map(feature => ({
+                feature: feature,
+                bounds: getFeatureCoordinateBounds(feature.geometry)
+            })).filter(item => item.bounds);
+        }
+
+        // Load Features In Parks dataset and cache source-coordinate bounds for fast per-park filtering.
         async function loadFeaturesInParks(authority) {
+            const authPath = getAuthorityPath(authority.id);
+            const featuresFilename = `${authority.name}_features_within_pp_or_g.geojson`;
             try {
-                // Remove existing layer
-                if (mapState.featuresInParksLayer && mapState.featuresInParksLayer.layer) {
-                    map.removeLayer(mapState.featuresInParksLayer.layer);
+                const response = await fetch(`${authPath}${featuresFilename}`);
+                if (!response.ok) {
+                    console.log(`Features in parks file not found: ${featuresFilename}`);
+                    mapState.featuresInParksLayer = null;
+                    return;
                 }
-                
-                const authPath = getAuthorityPath(authority.id);
-                const authName = authority.name;
-                const featuresFilename = `${authName}_features_within_pp_or_g.geojson`;
-                
-                try {
-                    const response = await fetch(`${authPath}${featuresFilename}`);
-                    if (!response.ok) {
-                        console.log(`Features in parks file not found: ${featuresFilename}`);
-                        return;
-                    }
-                    
-                    const featuresData = await response.json();
-                    if (!featuresData.features || featuresData.features.length === 0) {
-                        console.log(`No features data found for authority: ${authority.name}`);
-                        return;
-                    }
-                    
-                    // Create feature group for features in parks
-                    const featuresGroup = L.featureGroup();
-                    const typeColours = buildFeatureTypeColours(
-                        featuresData.features.map(f => getFeatureLabelIn(f.properties || {}))
-                    );
-                    
-                    // Use proj4.js for coordinate transformation (already loaded in HTML)
-                    featuresData.features.forEach(feature => {
-                        try {
-                            // Transform geometry from EPSG:27700 to EPSG:4326
-                            const transformedGeometry = transformCoordinates(feature.geometry);
-                            
-                            if (!transformedGeometry) {
-                                return;
-                            }
-                            
-                            if (feature.geometry.type === 'Point') {
-                                const coords = transformedGeometry.coordinates;
-                                const featureName = getFeatureLabelIn(feature.properties);
-                                const colour = typeColours[featureName];
-                                const marker = L.circleMarker([coords[1], coords[0]], {
-                                    radius: 5,
-                                    color: colour,
-                                    weight: 2,
-                                    opacity: 0.9,
-                                    fill: true,
-                                    fillColor: colour,
-                                    fillOpacity: 0.5
-                                });
-                                
-                                marker.bindTooltip(featureName, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    className: getFeatureTooltipClass(colour)
-                                });
-                                
-                                marker._featureType = featureName;
-                                featuresGroup.addLayer(marker);
-                            } else if (feature.geometry.type === 'Polygon') {
-                                const coords = transformedGeometry.coordinates[0].map(c => [c[1], c[0]]);
-                                const featureName = getFeatureLabelIn(feature.properties);
-                                const colour = typeColours[featureName];
-                                const polygon = L.polygon(coords, {
-                                    color: colour,
-                                    weight: 2,
-                                    opacity: 0.9,
-                                    fill: true,
-                                    fillColor: colour,
-                                    fillOpacity: 0.45,
-                                    lineCap: 'butt'
-                                });
-                                
-                                polygon.bindTooltip(featureName, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    className: getFeatureTooltipClass(colour)
-                                });
-                                
-                                polygon._featureType = featureName;
-                                featuresGroup.addLayer(polygon);
-                            } else if (feature.geometry.type === 'LineString') {
-                                const coords = transformedGeometry.coordinates.map(c => [c[1], c[0]]);
-                                const featureName = getFeatureLabelIn(feature.properties);
-                                const colour = typeColours[featureName];
-                                const line = L.polyline(coords, {
-                                    color: colour,
-                                    weight: 3,
-                                    opacity: 0.9,
-                                    lineCap: 'butt'
-                                });
-                                
-                                line.bindTooltip(featureName, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    className: getFeatureTooltipClass(colour)
-                                });
-                                
-                                line._featureType = featureName;
-                                featuresGroup.addLayer(line);
-                            }
-                        } catch (e) {
-                            console.warn('Error processing feature:', e);
-                        }
-                    });
-                    
-                    // Store layer info for toggling
-                    mapState.featuresInParksLayer = {
-                        id: 'features-in-parks',
-                        name: 'Park Features',
-                        layer: featuresGroup,
-                        typeColours: typeColours,
-                        visible: false
-                    };
-                    
-                    console.log(`Loaded ${featuresData.features.length} features in parks for ${authority.name}`);
-                } catch (error) {
-                    console.error('Error loading features in parks:', error);
-                }
+
+                const featuresData = await response.json();
+                mapState.featuresInParksLayer = {
+                    features: indexFeatureDataset(featuresData.features || [])
+                };
+                console.log(`Cached ${featuresData.features?.length || 0} features in parks for ${authority.name}`);
             } catch (error) {
-                console.error('Error in loadFeaturesInParks:', error);
+                console.error('Error loading features in parks:', error);
+                mapState.featuresInParksLayer = null;
             }
         }
         
@@ -3436,123 +3433,26 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             return label || 'Feature';
         }
         
-        // Load Features Near Parks dataset
+        // Load Features Near Parks dataset and cache source-coordinate bounds.
         async function loadFeaturesNearParks(authority) {
+            const authPath = getAuthorityPath(authority.id);
+            const featuresFilename = `${authority.name}_features_not_in_pp_or_g.geojson`;
             try {
-                // Remove existing layer
-                if (mapState.featuresNearParksLayer && mapState.featuresNearParksLayer.layer) {
-                    map.removeLayer(mapState.featuresNearParksLayer.layer);
+                const response = await fetch(`${authPath}${featuresFilename}`);
+                if (!response.ok) {
+                    console.log(`Features near parks file not found: ${featuresFilename}`);
+                    mapState.featuresNearParksLayer = null;
+                    return;
                 }
-                
-                const authPath = getAuthorityPath(authority.id);
-                const authName = authority.name;
-                const featuresFilename = `${authName}_features_not_in_pp_or_g.geojson`;
-                
-                try {
-                    const response = await fetch(`${authPath}${featuresFilename}`);
-                    if (!response.ok) {
-                        console.log(`Features near parks file not found: ${featuresFilename}`);
-                        return;
-                    }
-                    
-                    const featuresData = await response.json();
-                    if (!featuresData.features || featuresData.features.length === 0) {
-                        console.log(`No features data found near parks for authority: ${authority.name}`);
-                        return;
-                    }
-                    
-                    // Create feature group for features near parks
-                    const featuresGroup = L.featureGroup();
-                    
-                    // Use proj4.js for coordinate transformation (already loaded in HTML)
-                    featuresData.features.forEach(feature => {
-                        try {
-                            // Transform geometry from EPSG:27700 to EPSG:4326
-                            const transformedGeometry = transformCoordinates(feature.geometry);
-                            
-                            if (!transformedGeometry) {
-                                return;
-                            }
-                            
-                            if (feature.geometry.type === 'Point') {
-                                const coords = transformedGeometry.coordinates;
-                                const marker = L.circleMarker([coords[1], coords[0]], {
-                                    radius: 5,
-                                    color: '#FF9800',
-                                    weight: 2,
-                                    opacity: 0.8,
-                                    fill: true,
-                                    fillColor: '#FF9800',
-                                    fillOpacity: 0.3
-                                });
-                                
-                                const featureName = getFeatureLabelNear(feature.properties);
-                                marker.bindTooltip(featureName, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    className: 'features-near-parks-tooltip'
-                                });
-                                
-                                featuresGroup.addLayer(marker);
-                            } else if (feature.geometry.type === 'Polygon') {
-                                const coords = transformedGeometry.coordinates[0].map(c => [c[1], c[0]]);
-                                const polygon = L.polygon(coords, {
-                                    color: '#FF9800',
-                                    weight: 2,
-                                    opacity: 0.8,
-                                    dashArray: '5, 5',
-                                    fill: true,
-                                    fillColor: '#FF9800',
-                                    fillOpacity: 0.05,
-                                    lineCap: 'butt'
-                                });
-                                
-                                const featureName = getFeatureLabelNear(feature.properties);
-                                polygon.bindTooltip(featureName, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    className: 'features-near-parks-tooltip'
-                                });
-                                
-                                featuresGroup.addLayer(polygon);
-                            } else if (feature.geometry.type === 'LineString') {
-                                const coords = transformedGeometry.coordinates.map(c => [c[1], c[0]]);
-                                const line = L.polyline(coords, {
-                                    color: '#FF9800',
-                                    weight: 2,
-                                    opacity: 0.8,
-                                    dashArray: '5, 5',
-                                    lineCap: 'butt'
-                                });
-                                
-                                const featureName = getFeatureLabelNear(feature.properties);
-                                line.bindTooltip(featureName, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    className: 'features-near-parks-tooltip'
-                                });
-                                
-                                featuresGroup.addLayer(line);
-                            }
-                        } catch (e) {
-                            console.warn('Error processing feature:', e);
-                        }
-                    });
-                    
-                    // Store layer info for toggling
-                    mapState.featuresNearParksLayer = {
-                        id: 'features-near-parks',
-                        name: 'Features Near Parks',
-                        layer: featuresGroup,
-                        visible: false
-                    };
-                    
-                    console.log(`Loaded ${featuresData.features.length} features near parks for ${authority.name}`);
-                } catch (error) {
-                    console.error('Error loading features near parks:', error);
-                }
+
+                const featuresData = await response.json();
+                mapState.featuresNearParksLayer = {
+                    features: indexFeatureDataset(featuresData.features || [])
+                };
+                console.log(`Cached ${featuresData.features?.length || 0} features near parks for ${authority.name}`);
             } catch (error) {
-                console.error('Error in loadFeaturesNearParks:', error);
+                console.error('Error loading features near parks:', error);
+                mapState.featuresNearParksLayer = null;
             }
         }
         
@@ -3800,8 +3700,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 'park-boundary': 'modal-parkBoundary',
                 'all-parks': 'modal-nearbyParks',
                 'park-entrances': 'modal-parkEntrances',
-                'features-in-parks': 'modal-parkFeatures',
-                'features-near-parks': 'modal-featuresNearParks',
+                'features-in-and-near-parks': 'modal-parkFeatures',
                 'visibility-hexagons': 'modal-visibilityAnalysis',
                 'foliage-low-hexagons': 'modal-foliageLow',
                 'foliage-mid-hexagons': 'modal-foliageMid',
@@ -4047,8 +3946,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 } catch (error) {
                     console.error('Error toggling cycling network layer:', error);
                 }
-            } else if (layerId === 'features-in-parks' && mapState.featuresInParksLayer) {
-                const layerObj = mapState.featuresInParksLayer;
+            } else if (layerId === 'features-in-and-near-parks' && mapState.featuresInAndNearParksLayer) {
+                const layerObj = mapState.featuresInAndNearParksLayer;
                 try {
                     if (visible) {
                         layerObj.layer.addTo(map);
@@ -4057,19 +3956,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     }
                     layerObj.visible = visible;
                 } catch (error) {
-                    console.error('Error toggling features in parks layer:', error);
-                }
-            } else if (layerId === 'features-near-parks' && mapState.featuresNearParksLayer) {
-                const layerObj = mapState.featuresNearParksLayer;
-                try {
-                    if (visible) {
-                        layerObj.layer.addTo(map);
-                    } else {
-                        map.removeLayer(layerObj.layer);
-                    }
-                    layerObj.visible = visible;
-                } catch (error) {
-                    console.error('Error toggling features near parks layer:', error);
+                    console.error('Error toggling features in and near parks layer:', error);
                 }
             } else if (layerId === 'demographics' && mapState.demographicsLayer) {
                 const layerObj = mapState.demographicsLayer;
@@ -4262,12 +4149,12 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     type: 'street-lamps'
                 });
             }
-            
-            if (mapState.featuresInParksLayer && mapState.featuresInParksLayer.visible) {
+
+            if (mapState.featuresInAndNearParksLayer && mapState.featuresInAndNearParksLayer.visible) {
                 visibleLayers.push({
-                    id: 'features-in-parks',
-                    name: 'Park Features',
-                    type: 'features-in-parks'
+                    id: 'features-in-and-near-parks',
+                    name: 'Features in and near parks',
+                    type: 'features-in-and-near-parks'
                 });
             }
             
@@ -4696,8 +4583,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     lampsGroup.appendChild(lampsMarker);
                     legendItems.appendChild(lampsGroup);
                     return;
-                } else if (layer.type === 'features-in-parks') {
-                    // One entry per feature type present in this authority's data
+                } else if (layer.type === 'features-in-and-near-parks') {
                     const featuresGroup = document.createElement('div');
                     featuresGroup.style.marginBottom = '0.75rem';
                     
@@ -4709,17 +4595,17 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     heading.textContent = layer.name;
                     featuresGroup.appendChild(heading);
                     
-                    const colours = mapState.featuresInParksLayer.typeColours || {};
-                    // Only list types located within the selected park's bounds
-                    const parkBounds = mapState.parksLayer ? mapState.parksLayer.getBounds() : null;
-                    const typesInPark = new Set();
-                    mapState.featuresInParksLayer.layer.eachLayer(l => {
-                        const centre = l.getLatLng ? l.getLatLng() : l.getBounds().getCenter();
-                        if (!parkBounds || !parkBounds.isValid() || parkBounds.contains(centre)) {
-                            typesInPark.add(l._featureType);
-                        }
+                    const featureLayer = mapState.featuresInAndNearParksLayer;
+                    const categoriesInLayer = new Set();
+                    featureLayer.layer.eachLayer(l => {
+                        categoriesInLayer.add(l._featureType);
                     });
-                    Array.from(typesInPark).sort((a, b) => a.localeCompare(b)).forEach(typeName => {
+                    const categoryOrder = [
+                        ...window.PARK_FEATURE_CATEGORY_ORDER,
+                        'User specific green space',
+                        'Other / unclassified'
+                    ];
+                    categoryOrder.filter(categoryName => categoriesInLayer.has(categoryName)).forEach(categoryName => {
                         const row = document.createElement('div');
                         row.style.display = 'flex';
                         row.style.alignItems = 'center';
@@ -4732,11 +4618,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         swatch.style.height = '16px';
                         swatch.style.flexShrink = '0';
                         swatch.style.borderRadius = '2px';
-                        swatch.style.backgroundColor = colours[typeName];
+                        swatch.style.backgroundColor = window.PARK_FEATURE_CATEGORY_COLORS[categoryName];
                         swatch.style.border = '1px solid rgba(0,0,0,0.4)';
                         
                         row.appendChild(swatch);
-                        row.appendChild(document.createTextNode(typeName));
+                        row.appendChild(document.createTextNode(categoryName));
                         featuresGroup.appendChild(row);
                     });
                     
@@ -4781,6 +4667,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         // Reset map view
         document.getElementById('resetMapBtn').addEventListener('click', () => {
             map.setView([54.0, -1.5], 7);
+            if (mapState.featuresInAndNearParksLayer) {
+                map.removeLayer(mapState.featuresInAndNearParksLayer.layer);
+                mapState.featuresInAndNearParksLayer = null;
+            }
             if (mapState.parksLayer) {
                 map.removeLayer(mapState.parksLayer);
                 mapState.parksLayer = null;

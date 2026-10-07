@@ -1461,6 +1461,13 @@ async function loadParkData(parkName) {
                             return layerInfo;
                         }
                         else {
+                            if (layerInfo.id === 'park-features') {
+                                data.features = data.features.filter(feature => {
+                                    const featureName = feature.properties && feature.properties['Park Feature'];
+                                    return !featureName || window.categoriseParkFeature(featureName) !== null;
+                                });
+                            }
+
                             layer = L.geoJSON(data, {
                                 style: function(feature) {
                                     // Only apply style for non-point features
@@ -1478,7 +1485,9 @@ async function loadParkData(parkName) {
                                 onEachFeature: function(feature, layer) {
                                     if (layerInfo.id === 'park-features' && feature.properties && feature.properties['Park Feature']) {
                                         const featureName = feature.properties['Park Feature'];
-                                        parkFeaturesPresent.add(featureName);
+                                        const category = window.categoriseParkFeature(featureName);
+                                        if (!category) return;
+                                        parkFeaturesPresent.add(category.name);
                                         
                                         layer.bindPopup(featureName);
                                         layer.bindTooltip(featureName, {
@@ -1910,47 +1919,17 @@ function populateDataLayersLegend(layers) {
             featuresContainer.style.marginTop = '0.5rem';
             featuresContainer.style.marginLeft = '1rem';
             
-            // Helper function to check if a feature type exists in the data
-            const featureTypeExists = (featureName, checkStrings) => {
-                return Array.from(parkFeaturesPresent).some(feature => 
-                    checkStrings.some(str => feature.toLowerCase().includes(str))
-                );
-            };
-            
-            // Only show categories that actually exist in the data
-            const categories = [];
-            
-            if (featureTypeExists('garden', ['garden'])) {
-                categories.push({ name: 'Garden', fill: '#90EE90', stroke: '#2D8D2D', dash: '5,5' });
-            }
-            if (featureTypeExists('pitch', ['pitch', 'track', 'sports centre'])) {
-                categories.push({ name: 'Pitch / Track / Sports Centre', fill: '#714a6d', stroke: '#4A2A47', dash: '10,5' });
-            }
-            if (featureTypeExists('parking', ['parking'])) {
-                categories.push({ name: 'Parking', fill: '#3388ff', stroke: '#1a5cc4', dash: 'none' });
-            }
-            if (featureTypeExists('monument', ['monument'])) {
-                categories.push({ name: 'Monument', fill: '#999999', stroke: '#4d4d4d', dash: 'none' });
-            }
-            if (featureTypeExists('cafe', ['cafe', 'coffee'])) {
-                categories.push({ name: 'Cafe', fill: '#FF9800', stroke: '#E65100', dash: 'none' });
-            }
-            if (featureTypeExists('toilet', ['toilet', 'wc'])) {
-                categories.push({ name: 'Toilet', fill: '#068D9D', stroke: '#043F4B', dash: 'none' });
-            }
-            
-            // Add "Other" category if there are any features not already categorized
-            if (parkFeaturesPresent.size > 0) {
-                const allCategorized = Array.from(parkFeaturesPresent).every(feature => {
-                    const fname = feature.toLowerCase();
-                    return fname.includes('garden') || fname.includes('pitch') || fname.includes('track') || 
-                           fname.includes('sports centre') || fname.includes('parking') || fname.includes('monument') || 
-                           fname.includes('cafe') || fname.includes('coffee') || fname.includes('toilet') || fname.includes('wc');
-                });
-                if (!allCategorized) {
-                    categories.push({ name: 'Other', fill: '#E87EA1', stroke: '#B85A7A', dash: 'none' });
-                }
-            }
+            const categoryOrder = [
+                ...window.PARK_FEATURE_CATEGORY_ORDER,
+                'User specific green space',
+                'Other / unclassified'
+            ];
+            const categories = categoryOrder
+                .filter(name => parkFeaturesPresent.has(name))
+                .map(name => ({
+                    name: name,
+                    fill: window.PARK_FEATURE_CATEGORY_COLORS[name]
+                }));
             
             categories.forEach(cat => {
                 const subItem = document.createElement('div');
@@ -1965,8 +1944,7 @@ function populateDataLayersLegend(layers) {
                 symbol.style.marginRight = '0.5rem';
                 symbol.style.minWidth = '24px';
                 
-                const dashStyle = cat.dash === 'none' ? '' : `stroke-dasharray="${cat.dash}"`;
-                symbol.innerHTML = `<svg width="24" height="24"><rect x="4" y="4" width="16" height="16" fill="${cat.fill}" stroke="${cat.stroke}" stroke-width="2" ${dashStyle}/></svg>`;
+                symbol.innerHTML = `<svg width="24" height="24"><rect x="4" y="4" width="16" height="16" fill="${cat.fill}" stroke="#333" stroke-width="1"/></svg>`;
                 
                 const label = document.createElement('span');
                 label.textContent = cat.name;
@@ -2099,89 +2077,11 @@ function extractFolderNamesFromHtml(html) {
 
 // Helper function to get styling for park features based on their type
 function getParkFeatureStyle(featureName) {
-    if (!featureName) {
-        return { 
-            fillColor: '#E87EA1', 
-            color: '#C2527A', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: null 
-        };
-    }
-    
-    const name = featureName.toLowerCase();
-    
-    if (name.includes('garden')) {
-        return { 
-            fillColor: '#90EE90', 
-            color: '#2D8D2D', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: '5,5' 
-        };
-    }
-    
-    if (name.includes('pitch') || name.includes('track') || name.includes('sports centre')) {
-        return { 
-            fillColor: '#714a6d', 
-            color: '#4A2A47', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: '10,5' 
-        };
-    }
-    
-    if (name.includes('parking')) {
-        return { 
-            fillColor: '#3388ff', 
-            color: '#1a5cc4', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: null 
-        };
-    }
-    
-    if (name.includes('monument')) {
-        return { 
-            fillColor: '#999999', 
-            color: '#4d4d4d', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: null 
-        };
-    }
-    
-    if (name.includes('cafe') || name.includes('coffee')) {
-        return { 
-            fillColor: '#FF9800', 
-            color: '#E65100', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: null 
-        };
-    }
-    
-    if (name.includes('toilet') || name.includes('wc')) {
-        return { 
-            fillColor: '#068D9D', 
-            color: '#043F4B', 
-            weight: 2, 
-            fillOpacity: 0.8,
-            dashArray: null 
-        };
-    }
-    
-    // Others - cycle through colors
-    const otherColors = [
-        { fill: '#E87EA1', stroke: '#B85A7A' },
-        { fill: '#CB904D', stroke: '#8B6230' },
-        { fill: '#6D9DC5', stroke: '#445A7F' }
-    ];
-    const colorIndex = featureName.charCodeAt(0) % otherColors.length;
-    const colorPair = otherColors[colorIndex];
+    const category = window.categoriseParkFeature(featureName) ||
+        window.categoriseParkFeature('unclassified');
     return { 
-        fillColor: colorPair.fill, 
-        color: colorPair.stroke, 
+        fillColor: category.color,
+        color: category.color,
         weight: 2, 
         fillOpacity: 0.8,
         dashArray: null 
