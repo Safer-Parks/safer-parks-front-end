@@ -1491,15 +1491,29 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 defaultOption.textContent = 'Select a region';
                 select.appendChild(defaultOption);
                 
-                // Add each region as an option
+                // Group regions by country (ID prefix: E = England, W = Wales)
+                const englandGroup = document.createElement('optgroup');
+                englandGroup.label = 'England';
+                const walesGroup = document.createElement('optgroup');
+                walesGroup.label = 'Wales / Cymru';
+                
                 regionsData.regions.forEach(region => {
                     const option = document.createElement('option');
                     option.value = region.id;
-                    option.textContent = `${region.name_en} / ${region.name_cy}`;
-                    select.appendChild(option);
+                    if (region.id.startsWith('W')) {
+                        option.textContent = `${region.name_en} / ${region.name_cy}`;
+                        walesGroup.appendChild(option);
+                    } else {
+                        // No Welsh translation needed for English regions
+                        option.textContent = region.name_en;
+                        englandGroup.appendChild(option);
+                    }
                 });
                 
-                console.log('Loaded 14 regions');
+                select.appendChild(englandGroup);
+                select.appendChild(walesGroup);
+                
+                console.log(`Loaded ${regionsData.regions.length} regions`);
             } catch (err) {
                 console.error('Error loading regions:', err);
             }
