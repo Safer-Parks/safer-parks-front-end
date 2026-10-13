@@ -2711,6 +2711,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // Magenta sequential ramp (low to high NACH), shared by map lines and legend
+        const NACH_COLORS = ['#fde4f1', '#f9b4d8', '#ee7fbd', '#d9479f', '#b01f80', '#7f0f61', '#4a0a3d'];
+
         // Total extra width (px) of the white outline around NACH lines
         const NACH_CASING_WIDTH = 2;
 
@@ -2762,14 +2765,15 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     const minNACH = Math.min(...nachValues);
                     const maxNACH = Math.max(...nachValues);
                     
-                    // Create greyscale color palette (white for low, black for high)
-                    const greyscaleColors = ['#ffffff', '#e6e6e6', '#cccccc', '#999999', '#666666', '#333333', '#000000'];
-                    
-                    // Simple color interpolation function for greyscale
-                    const getGreyscaleColor = (value, minVal, maxVal) => {
-                        const normalized = (value - minVal) / (maxVal - minVal);
-                        const index = Math.floor(normalized * (greyscaleColors.length - 1));
-                        return greyscaleColors[Math.min(Math.max(index, 0), greyscaleColors.length - 1)];
+                    // Single-hue magenta sequential colormap (light for low, dark for high), interpolated linearly
+                    const getNachColor = (value, minVal, maxVal) => {
+                        const t = maxVal > minVal ? Math.min(Math.max((value - minVal) / (maxVal - minVal), 0), 1) : 0;
+                        const pos = t * (NACH_COLORS.length - 1);
+                        const i = Math.min(Math.floor(pos), NACH_COLORS.length - 2);
+                        const f = pos - i;
+                        const a = NACH_COLORS[i], b = NACH_COLORS[i + 1];
+                        const ch = k => Math.round(parseInt(a.substr(1 + 2 * k, 2), 16) * (1 - f) + parseInt(b.substr(1 + 2 * k, 2), 16) * f);
+                        return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
                     };
                     
                     const casings = [];
@@ -2779,7 +2783,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         // Convert to Leaflet format: [lat, lng]
                         const leafletCoords = geoJsonCoords.map(coord => [coord[1], coord[0]]);
                         const nachValue = feature.properties.nach || 0;
-                        const color = getGreyscaleColor(nachValue, minNACH, maxNACH);
+                        const color = getNachColor(nachValue, minNACH, maxNACH);
                         
                         // Base weight strongly dependent on NACH (power curve emphasises high values)
                         const normalizedValue = (maxNACH > minNACH) ? (nachValue - minNACH) / (maxNACH - minNACH) : 0;
@@ -4530,7 +4534,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     legendItems.appendChild(foliageGroup);
                     return;
                 } else if (layer.type === 'nach') {
-                    // Create NACH (Predicted Route Popularity) greyscale gradient legend
+                    // Create NACH (Predicted Route Popularity) magenta gradient legend
                     const label = document.createElement('span');
                     label.style.fontSize = '0.85rem';
                     label.style.fontWeight = '500';
@@ -4542,11 +4546,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     nachGroup.style.marginBottom = '0.75rem';
                     nachGroup.appendChild(label);
                     
-                    // Create gradient bar (white to black greyscale)
+                    // Create gradient bar (magenta ramp)
                     const gradientBar = document.createElement('div');
                     gradientBar.style.width = '100%';
                     gradientBar.style.height = '20px';
-                    gradientBar.style.background = 'linear-gradient(to right, #ffffff, #e6e6e6, #cccccc, #999999, #666666, #333333, #000000)';
+                    gradientBar.style.background = `linear-gradient(to right, ${NACH_COLORS.join(', ')})`;
                     gradientBar.style.borderRadius = '4px';
                     gradientBar.style.marginBottom = '0.25rem';
                     nachGroup.appendChild(gradientBar);
