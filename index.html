@@ -2711,6 +2711,15 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // Total extra width (px) of the white outline around NACH lines
+        const NACH_CASING_WIDTH = 2;
+
+        // Width multiplier for NACH lines: 1x at zoom 14, doubling every 3 zoom levels, clamped
+        function getNachZoomScale() {
+            const z = map.getZoom();
+            return Math.min(Math.max(Math.pow(2, (z - 14) / 3), 0.7), 2.5);
+        }
+
         // Load NACH (Predicted Route Popularity) network
         async function loadNACHNetwork(park) {
             try {
@@ -2763,6 +2772,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         return greyscaleColors[Math.min(Math.max(index, 0), greyscaleColors.length - 1)];
                     };
                     
+                    const casings = [];
+                    const lines = [];
                     nachData.features.forEach(feature => {
                         const geoJsonCoords = feature.geometry.coordinates; // GeoJSON: [lng, lat]
                         // Convert to Leaflet format: [lat, lng]
@@ -2770,9 +2781,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         const nachValue = feature.properties.nach || 0;
                         const color = getGreyscaleColor(nachValue, minNACH, maxNACH);
                         
-                        // Calculate line weight based on NACH value (1 to 5 for noticeable variation)
-                        const normalizedValue = (nachValue - minNACH) / (maxNACH - minNACH);
-                        const weight = 1 + (normalizedValue * 4); // Range from 1 to 5
+                        // Base weight strongly dependent on NACH (power curve emphasises high values)
+                        const normalizedValue = (maxNACH > minNACH) ? (nachValue - minNACH) / (maxNACH - minNACH) : 0;
+                        const baseWeight = 0.8 + Math.pow(normalizedValue, 1.5) * 5; // 0.8 to 5.8
+                        const weight = baseWeight * getNachZoomScale();
                         
                         // Create line for each network segment
                         const line = L.polyline(leafletCoords, {
@@ -2794,8 +2806,37 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             className: 'nach-tooltip'
                         });
                         
-                        nachGroup.addLayer(line);
+                        line._nachBaseWeight = baseWeight;
+                        const casing = L.polyline(leafletCoords, {
+                            color: '#ffffff',
+                            weight: weight + NACH_CASING_WIDTH,
+                            opacity: 1.0,
+                            lineCap: 'round',
+                            lineJoin: 'round',
+                            interactive: false
+                        });
+                        line._nachCasing = casing;
+                        casings.push(casing);
+                        lines.push(line);
                     });
+                    // Add all casings first so every white outline sits beneath every line
+                    casings.forEach(c => nachGroup.addLayer(c));
+                    lines.forEach(l => nachGroup.addLayer(l));
+                    
+                    // Rescale line widths with zoom so lines thicken as the user zooms in
+                    const updateNachWeights = () => {
+                        const scale = getNachZoomScale();
+                        lines.forEach(l => {
+                            const w = l._nachBaseWeight * scale;
+                            l.setStyle({ weight: w });
+                            l._nachCasing.setStyle({ weight: w + NACH_CASING_WIDTH });
+                        });
+                    };
+                    nachGroup.on('add', () => {
+                        updateNachWeights();
+                        map.on('zoomend', updateNachWeights);
+                    });
+                    nachGroup.on('remove', () => map.off('zoomend', updateNachWeights));
                     
                     // Store layer info for toggling (but don't add to map yet - user must enable via toggle)
                     mapState.nachLayer = {
