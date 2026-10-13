@@ -2711,8 +2711,24 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
-        // Magenta sequential ramp (low to high NACH), shared by map lines and legend
-        const NACH_COLORS = ['#fde4f1', '#f9b4d8', '#ee7fbd', '#d9479f', '#b01f80', '#7f0f61', '#4a0a3d'];
+        // Google Turbo colormap (polynomial approximation by Anton Mikhailov), t in [0,1]: blue = low, red = high
+        function turboColor(t) {
+            t = Math.min(Math.max(t, 0), 1);
+            const c = [
+                [0.13572138, 4.61539260, -42.66032258, 132.13108234, -152.94239396, 59.28637943],
+                [0.09140261, 2.19418839, 4.84296658, -14.18503333, 4.27729857, 2.82956604],
+                [0.10667330, 12.64194608, -60.58204836, 110.36276771, -89.90310912, 27.34824973]
+            ];
+            const rgb = c.map(k => {
+                let v = 0;
+                for (let n = k.length - 1; n >= 0; n--) v = v * t + k[n];
+                return Math.round(Math.min(Math.max(v, 0), 1) * 255);
+            });
+            return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        }
+
+        // Shared by the legend gradient bar
+        const NACH_LEGEND_GRADIENT = `linear-gradient(to right, ${Array.from({ length: 11 }, (_, i) => turboColor(i / 10)).join(', ')})`;
 
         // Total extra width (px) of the white outline around NACH lines
         const NACH_CASING_WIDTH = 2;
@@ -2765,16 +2781,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     const minNACH = Math.min(...nachValues);
                     const maxNACH = Math.max(...nachValues);
                     
-                    // Single-hue magenta sequential colormap (light for low, dark for high), interpolated linearly
-                    const getNachColor = (value, minVal, maxVal) => {
-                        const t = maxVal > minVal ? Math.min(Math.max((value - minVal) / (maxVal - minVal), 0), 1) : 0;
-                        const pos = t * (NACH_COLORS.length - 1);
-                        const i = Math.min(Math.floor(pos), NACH_COLORS.length - 2);
-                        const f = pos - i;
-                        const a = NACH_COLORS[i], b = NACH_COLORS[i + 1];
-                        const ch = k => Math.round(parseInt(a.substr(1 + 2 * k, 2), 16) * (1 - f) + parseInt(b.substr(1 + 2 * k, 2), 16) * f);
-                        return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
-                    };
+                    const getNachColor = (value, minVal, maxVal) =>
+                        turboColor(maxVal > minVal ? (value - minVal) / (maxVal - minVal) : 0);
                     
                     const casings = [];
                     const lines = [];
@@ -4534,7 +4542,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     legendItems.appendChild(foliageGroup);
                     return;
                 } else if (layer.type === 'nach') {
-                    // Create NACH (Predicted Route Popularity) magenta gradient legend
+                    // Create NACH (Predicted Route Popularity) Turbo gradient legend
                     const label = document.createElement('span');
                     label.style.fontSize = '0.85rem';
                     label.style.fontWeight = '500';
@@ -4546,11 +4554,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     nachGroup.style.marginBottom = '0.75rem';
                     nachGroup.appendChild(label);
                     
-                    // Create gradient bar (magenta ramp)
+                    // Create gradient bar (Turbo colormap)
                     const gradientBar = document.createElement('div');
                     gradientBar.style.width = '100%';
                     gradientBar.style.height = '20px';
-                    gradientBar.style.background = `linear-gradient(to right, ${NACH_COLORS.join(', ')})`;
+                    gradientBar.style.background = NACH_LEGEND_GRADIENT;
                     gradientBar.style.borderRadius = '4px';
                     gradientBar.style.marginBottom = '0.25rem';
                     nachGroup.appendChild(gradientBar);
