@@ -1721,8 +1721,18 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             // Load authorities for the selected region
             await loadAuthorities();
             
-            // Reload regional pocket parks for the new region
+            // Reload regional layers for the new region
+            // Reset toggles and their associated visibility variables
+            pocketParksToggle.checked = false;
+            pocketParksVisible = false;
+            cyclingNetworkToggle.checked = false;
+            cyclingNetworkVisible = false;
+            streetLampsToggle.checked = false;
+            streetLampsVisible = false;
+            
             await loadRegionalPocketParks();
+            await loadRegionalCyclingNetwork();
+            await loadRegionalStreetLamps();
         });
         
         // Handle authority selection
@@ -1996,11 +2006,16 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 };
                 
                 mapState.allParksLayer = L.geoJSON(allParksGeoJSON, {
-                    style: {
-                        color: '#4F6C37',
-                        weight: 4,
-                        opacity: 1,
-                        fillOpacity: 0.5
+                    style: function(feature) {
+                        // Use purple for large parks (>10ha), dark green for others
+                        const color = feature.properties.sizeCategory === 'Large park' ? '#572B70' : '#4F6C37';
+                        return {
+                            color: color,
+                            weight: 4,
+                            opacity: 1,
+                            fillColor: color,
+                            fillOpacity: 0.5
+                        };
                     },
                     onEachFeature: (feature, layer) => {
                         layer.bindPopup(`<strong>${feature.properties.name}</strong>`);
@@ -3070,10 +3085,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     }, {
                         style: function(feature) {
                             return {
-                                color: '#572B70',
+                                color: '#FF6B35',
                                 weight: 2,
                                 opacity: 0.9,
-                                fillColor: '#572B70',
+                                fillColor: '#FF6B35',
                                 fillOpacity: 0.2
                             };
                         },
@@ -5103,10 +5118,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             // Initialize data on page load
             (async () => {
                 await loadRegions();
-                // loadAuthorities() is called automatically when a region is selected via loadRegions()
-                await loadRegionalCyclingNetwork();
-                await loadRegionalStreetLamps();
-                await loadRegionalPocketParks();
+                // loadAuthorities() and regional layers are called automatically when a region is selected
             })();
         });
     </script>
