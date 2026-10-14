@@ -2711,6 +2711,34 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // Google Turbo colormap (polynomial approximation by Anton Mikhailov), t in [0,1]: blue = low, red = high
+        function turboColor(t) {
+            t = Math.min(Math.max(t, 0), 1);
+            const c = [
+                [0.13572138, 4.61539260, -42.66032258, 132.13108234, -152.94239396, 59.28637943],
+                [0.09140261, 2.19418839, 4.84296658, -14.18503333, 4.27729857, 2.82956604],
+                [0.10667330, 12.64194608, -60.58204836, 110.36276771, -89.90310912, 27.34824973]
+            ];
+            const rgb = c.map(k => {
+                let v = 0;
+                for (let n = k.length - 1; n >= 0; n--) v = v * t + k[n];
+                return Math.round(Math.min(Math.max(v, 0), 1) * 255);
+            });
+            return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        }
+
+        // Shared by the legend gradient bar
+        const NACH_LEGEND_GRADIENT = `linear-gradient(to right, ${Array.from({ length: 11 }, (_, i) => turboColor(i / 10)).join(', ')})`;
+
+        // Total extra width (px) of the white outline around NACH lines
+        const NACH_CASING_WIDTH = 2;
+
+        // Width multiplier for NACH lines: 1x at zoom 14, doubling every 3 zoom levels, clamped
+        function getNachZoomScale() {
+            const z = map.getZoom();
+            return Math.min(Math.max(Math.pow(2, (z - 14) / 3), 0.7), 2.5);
+        }
+
         // Load NACH (Predicted Route Popularity) network
         async function loadNACHNetwork(park) {
             try {
@@ -2753,26 +2781,22 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     const minNACH = Math.min(...nachValues);
                     const maxNACH = Math.max(...nachValues);
                     
-                    // Create greyscale color palette (white for low, black for high)
-                    const greyscaleColors = ['#ffffff', '#e6e6e6', '#cccccc', '#999999', '#666666', '#333333', '#000000'];
+                    const getNachColor = (value, minVal, maxVal) =>
+                        turboColor(maxVal > minVal ? (value - minVal) / (maxVal - minVal) : 0);
                     
-                    // Simple color interpolation function for greyscale
-                    const getGreyscaleColor = (value, minVal, maxVal) => {
-                        const normalized = (value - minVal) / (maxVal - minVal);
-                        const index = Math.floor(normalized * (greyscaleColors.length - 1));
-                        return greyscaleColors[Math.min(Math.max(index, 0), greyscaleColors.length - 1)];
-                    };
-                    
+                    const casings = [];
+                    const lines = [];
                     nachData.features.forEach(feature => {
                         const geoJsonCoords = feature.geometry.coordinates; // GeoJSON: [lng, lat]
                         // Convert to Leaflet format: [lat, lng]
                         const leafletCoords = geoJsonCoords.map(coord => [coord[1], coord[0]]);
                         const nachValue = feature.properties.nach || 0;
-                        const color = getGreyscaleColor(nachValue, minNACH, maxNACH);
+                        const color = getNachColor(nachValue, minNACH, maxNACH);
                         
-                        // Calculate line weight based on NACH value (1 to 5 for noticeable variation)
-                        const normalizedValue = (nachValue - minNACH) / (maxNACH - minNACH);
-                        const weight = 1 + (normalizedValue * 4); // Range from 1 to 5
+                        // Base weight strongly dependent on NACH (power curve emphasises high values)
+                        const normalizedValue = (maxNACH > minNACH) ? (nachValue - minNACH) / (maxNACH - minNACH) : 0;
+                        const baseWeight = 0.8 + Math.pow(normalizedValue, 1.5) * 5; // 0.8 to 5.8
+                        const weight = baseWeight * getNachZoomScale();
                         
                         // Create line for each network segment
                         const line = L.polyline(leafletCoords, {
@@ -2794,8 +2818,37 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             className: 'nach-tooltip'
                         });
                         
-                        nachGroup.addLayer(line);
+                        line._nachBaseWeight = baseWeight;
+                        const casing = L.polyline(leafletCoords, {
+                            color: '#ffffff',
+                            weight: weight + NACH_CASING_WIDTH,
+                            opacity: 1.0,
+                            lineCap: 'round',
+                            lineJoin: 'round',
+                            interactive: false
+                        });
+                        line._nachCasing = casing;
+                        casings.push(casing);
+                        lines.push(line);
                     });
+                    // Add all casings first so every white outline sits beneath every line
+                    casings.forEach(c => nachGroup.addLayer(c));
+                    lines.forEach(l => nachGroup.addLayer(l));
+                    
+                    // Rescale line widths with zoom so lines thicken as the user zooms in
+                    const updateNachWeights = () => {
+                        const scale = getNachZoomScale();
+                        lines.forEach(l => {
+                            const w = l._nachBaseWeight * scale;
+                            l.setStyle({ weight: w });
+                            l._nachCasing.setStyle({ weight: w + NACH_CASING_WIDTH });
+                        });
+                    };
+                    nachGroup.on('add', () => {
+                        updateNachWeights();
+                        map.on('zoomend', updateNachWeights);
+                    });
+                    nachGroup.on('remove', () => map.off('zoomend', updateNachWeights));
                     
                     // Store layer info for toggling (but don't add to map yet - user must enable via toggle)
                     mapState.nachLayer = {
@@ -4489,7 +4542,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     legendItems.appendChild(foliageGroup);
                     return;
                 } else if (layer.type === 'nach') {
-                    // Create NACH (Predicted Route Popularity) greyscale gradient legend
+                    // Create NACH (Predicted Route Popularity) Turbo gradient legend
                     const label = document.createElement('span');
                     label.style.fontSize = '0.85rem';
                     label.style.fontWeight = '500';
@@ -4501,11 +4554,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     nachGroup.style.marginBottom = '0.75rem';
                     nachGroup.appendChild(label);
                     
-                    // Create gradient bar (white to black greyscale)
+                    // Create gradient bar (Turbo colormap)
                     const gradientBar = document.createElement('div');
                     gradientBar.style.width = '100%';
                     gradientBar.style.height = '20px';
-                    gradientBar.style.background = 'linear-gradient(to right, #ffffff, #e6e6e6, #cccccc, #999999, #666666, #333333, #000000)';
+                    gradientBar.style.background = NACH_LEGEND_GRADIENT;
                     gradientBar.style.borderRadius = '4px';
                     gradientBar.style.marginBottom = '0.25rem';
                     nachGroup.appendChild(gradientBar);
