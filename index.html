@@ -233,6 +233,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             background: #4F6C37;
         }
         
+        .legend-marker.filled-large {
+            background: #572B70;
+        }
+        
         .legend-marker.circle {
             border-radius: 50%;
             width: 16px;
@@ -2079,6 +2083,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 }
                 
                 console.log(`Loaded ${parks.length} parks from ${successFile}`);
+                updateLegend();
                 
                 // Cache both feature datasets for filtering around the selected park.
                 await loadFeaturesInParks(authority);
@@ -4379,11 +4384,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
             
             if (mapState.otherParksLayer && mapState.otherParksLayer.visible) {
-                visibleLayers.push({
-                    id: 'all-parks',
-                    name: 'Nearby Parks',
-                    type: 'filled'
-                });
+                visibleLayers.push(
+                    { id: 'all-parks-large', name: 'Nearby Parks: Large (>10ha)', type: 'filled-large' },
+                    { id: 'all-parks-medium', name: 'Nearby Parks: Medium', type: 'filled' }
+                );
             }
             
             if (mapState.entrancesLayer && mapState.entrancesLayer.visible) {
@@ -4474,6 +4478,14 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 });
             }
             
+            if (mapState.pocketParksLayer && mapState.pocketParksLayer.visible) {
+                visibleLayers.push({
+                    id: 'pocket-parks',
+                    name: 'Pocket Parks',
+                    type: 'pocket-parks'
+                });
+            }
+            
             if (mapState.cyclingNetworkLayer && mapState.cyclingNetworkLayer.visible) {
                 visibleLayers.push({
                     id: 'cycling-network',
@@ -4506,6 +4518,15 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 });
             }
             
+            // Area-level view (no park selected): describe the parks shown on the map
+            if (mapState.allParksLayer && map.hasLayer(mapState.allParksLayer) &&
+                !(mapState.parkBoundaryLayer && mapState.parkBoundaryLayer.visible)) {
+                visibleLayers.push(
+                    { id: 'area-parks-large', name: 'Large park (>10ha)', type: 'filled-large' },
+                    { id: 'area-parks-medium', name: 'Medium park', type: 'filled' }
+                );
+            }
+            
             // Clear existing items
             legendItems.innerHTML = '';
             
@@ -4529,6 +4550,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     marker.className += ' outline';
                 } else if (layer.type === 'filled') {
                     marker.className += ' filled';
+                } else if (layer.type === 'pocket-parks') {
+                    marker.style.border = '2px solid #FF6B35';
+                    marker.style.background = 'rgba(255, 107, 53, 0.2)';
+                } else if (layer.type === 'filled-large') {
+                    marker.className += ' filled-large';
                 } else if (layer.type === 'entrances') {
                     // Show both primary and secondary entrance examples
                     const label = document.createElement('span');
@@ -5062,12 +5088,22 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 mapState.entrancesLayer.visible = true;
             }
             
+            // Park-level legend entries are gone; show the area legend if an area is loaded
+            ['toiletLayer', 'benchesLayer', 'cyclingLayer', 'walkingLayer',
+             'supplementalLightingLayer', 'demographicsLayer'].forEach(key => {
+                if (mapState[key] && mapState[key].layer && map.hasLayer(mapState[key].layer)) {
+                    map.removeLayer(mapState[key].layer);
+                }
+                mapState[key] = null;
+            });
+            mapState.parkBoundaryLayer = null;
+            mapState.otherParksLayer = null;
+            updateLegend();
+            
             // Hide layer toggles when resetting
             document.getElementById('dataLayerToggles').style.display = 'none';
             document.getElementById('layerHint').style.display = 'none';
             document.getElementById('layerHR').style.display = 'none';
-            document.getElementById('legendPanel').style.display = 'none';
-            
             document.getElementById('parks').value = '';
             
             // Hide park name in nav
