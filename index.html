@@ -557,7 +557,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     class="accordion-trigger" 
                     aria-controls="controls-content"
                     id="controls-heading">
-                    <span class="accordion-title">Explore Parks</span>
+                    <span class="accordion-title" id="exploreTitle">Explore Parks</span>
                     <span class="accordion-icon" aria-hidden="true"></span>
                 </button>
             </h2>
@@ -1700,6 +1700,18 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // Update sidebar header to the most specific selection
+        function updateExploreTitle() {
+            const selectedText = (id) => {
+                const sel = document.getElementById(id);
+                return sel && sel.value !== '' && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].textContent : '';
+            };
+            document.getElementById('exploreTitle').textContent =
+                selectedText('parks') || selectedText('localAuthority') || selectedText('regionSelect') || 'Explore Parks';
+        }
+        ['regionSelect', 'localAuthority', 'parks'].forEach(id =>
+            document.getElementById(id).addEventListener('change', updateExploreTitle));
+
         // Handle region selection
         document.getElementById('regionSelect').addEventListener('change', async (e) => {
             const regionId = e.target.value;
@@ -1708,6 +1720,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 document.getElementById('localAuthority').innerHTML = '<option value="">Select a region first</option>';
                 document.getElementById('parks').disabled = true;
                 document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
+                updateExploreTitle();
                 return;
             }
             
@@ -1721,6 +1734,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             document.getElementById('localAuthority').innerHTML = '<option value="">Select an area</option>';
             document.getElementById('parks').disabled = true;
             document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
+            updateExploreTitle();
             
             // Load authorities for the selected region
             await loadAuthorities();
@@ -1745,6 +1759,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             if (!authorityId) {
                 document.getElementById('parks').disabled = true;
                 document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
+                updateExploreTitle();
                 return;
             }
             
@@ -2197,6 +2212,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 return;
             }
             
+            updateExploreTitle();
             const selectedPark = mapState.sortedParks[selectedIndex];
             
             if (!selectedPark || !selectedPark.geometry) {
@@ -5105,6 +5121,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             document.getElementById('layerHint').style.display = 'none';
             document.getElementById('layerHR').style.display = 'none';
             document.getElementById('parks').value = '';
+            updateExploreTitle();
             
             // Hide park name in nav
             const navParkName = document.getElementById('navParkName');
