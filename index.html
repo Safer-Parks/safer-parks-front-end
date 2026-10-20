@@ -5052,6 +5052,11 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         // Screenshot: grabs a single frame of the current tab's pixels (no re-rendering of map layers)
         document.getElementById('screenshotBtn').addEventListener('click', async () => {
             let stream;
+            // Create overlay to block all mouse events during screenshot
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:all;z-index:999999;';
+            document.body.appendChild(overlay);
+            
             try {
                 stream = await navigator.mediaDevices.getDisplayMedia({
                     video: true,
@@ -5062,7 +5067,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 video.srcObject = stream;
                 video.muted = true;
                 await video.play();
-                await new Promise(r => setTimeout(r, 300)); // let the picker UI disappear
+                await new Promise(r => setTimeout(r, 500)); // let the picker UI disappear and rendering complete
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
@@ -5074,6 +5079,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     a.click();
                     URL.revokeObjectURL(a.href);
                 }, 'image/png');
+                // Keep overlay for 2 more seconds after capture to prevent click interference
+                await new Promise(r => setTimeout(r, 2000));
             } catch (err) {
                 if (err.name !== 'NotAllowedError') {
                     console.error('Screenshot failed:', err);
@@ -5081,6 +5088,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 }
             } finally {
                 if (stream) stream.getTracks().forEach(t => t.stop());
+                overlay.remove();
             }
         });
 
