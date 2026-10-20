@@ -544,6 +544,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <li><a href="https://Safer-Parks.github.io" target="_blank" rel="noopener noreferrer"><strong>The Safer Parks Dashboard</strong></a><span id="navParkName" style="display:none; margin-left: 2rem;"></span></li>
             <li style="margin-left: auto;"><a href="https://safer-parks-landing-page-test.pages.dev/faqs" target="_blank" rel="noopener noreferrer">FAQs</a></li>
             <li ><a href="https://Safer-Parks.github.io/guide.html" target="_blank" rel="noopener noreferrer">Layer guide</a></li>
+            <li><a id="screenshotBtn" href="#" onclick="return false;" style="cursor:pointer;">Capture Screenshot</a></li>
         </ul>
     </nav>
 
@@ -5047,6 +5048,41 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
         
         // Reset map view
+        // Screenshot: grabs a single frame of the current tab's pixels (no re-rendering of map layers)
+        document.getElementById('screenshotBtn').addEventListener('click', async () => {
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    preferCurrentTab: true,
+                    selfBrowserSurface: 'include'
+                });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.muted = true;
+                await video.play();
+                await new Promise(r => setTimeout(r, 300)); // let the picker UI disappear
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                canvas.toBlob(blob => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `safer-parks-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                }, 'image/png');
+            } catch (err) {
+                if (err.name !== 'NotAllowedError') {
+                    console.error('Screenshot failed:', err);
+                    alert('Screenshot failed: ' + err.message);
+                }
+            } finally {
+                if (stream) stream.getTracks().forEach(t => t.stop());
+            }
+        });
+
         document.getElementById('resetMapBtn').addEventListener('click', () => {
             map.setView([54.0, -1.5], 7);
             if (mapState.featuresInAndNearParksLayer) {
