@@ -1380,7 +1380,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <ul>
                     <li>Select a region and authority from the left panel</li>
                     <li>Toggle data layers in the legend to explore different insights</li>
-                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the "Capture Screenshot" button.</li>
+                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the "Capture Screenshot" button. Note: the required permission pop-up may not work with your browser in full-screen mode.</li>
                 </ul>
                 <p>See our Layer Guide linked in the navigation bar above, or click on the green info icon next to each entry in the legend.</p>
             `
@@ -5075,7 +5075,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 canvas.toBlob(blob => {
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `safer-parks-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.png`;
+                    a.download = `safer-parks-${new Date().toISOString().slice(0, 10)}.png`; // browser auto-numbers repeats: (1), (2)...
                     a.click();
                     URL.revokeObjectURL(a.href);
                 }, 'image/png');
