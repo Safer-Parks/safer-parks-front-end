@@ -492,6 +492,13 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             color: #333;
         }
 
+        .modal-close-btn:focus-visible,
+        nav li a:focus-visible,
+        nav li .nav-link-btn:focus-visible {
+            outline: 3px solid #572B70;
+            outline-offset: 2px;
+        }
+
         /* Modal title */
         .modal-title {
             font-family: 'MrDodo', serif;
@@ -531,8 +538,21 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             font-family: 'MrDodo', serif;
         }
         
-        nav li a:hover {
+        nav li a:hover,
+        nav li .nav-link-btn:hover {
             text-decoration: underline;
+        }
+
+        /* Native button that looks identical to the nav links */
+        nav li .nav-link-btn {
+            all: unset;
+            box-sizing: border-box;
+            cursor: pointer;
+            color: #572B70;
+            font-weight: 500;
+            font-family: 'MrDodo', serif;
+            font-size: inherit;
+            line-height: inherit;
         }
 
     </style>
@@ -542,7 +562,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <nav>
         <ul>
             <li><a href="https://Safer-Parks.github.io" target="_blank" rel="noopener noreferrer"><strong>The Safer Parks Dashboard</strong></a><span id="navParkName" style="display:none; margin-left: 2rem;"></span></li>
-            <li style="margin-left: auto;"><a href="https://safer-parks-landing-page-test.pages.dev/faqs" target="_blank" rel="noopener noreferrer">FAQs</a></li>
+            <li style="margin-left: auto;"><button type="button" id="citeBtn" class="nav-link-btn" aria-haspopup="dialog" onclick="openModal('modal-howToCite')">How to cite</button></li>
+            <li><a href="https://safer-parks-landing-page-test.pages.dev/faqs" target="_blank" rel="noopener noreferrer">FAQs</a></li>
             <li ><a href="https://Safer-Parks.github.io/guide.html" target="_blank" rel="noopener noreferrer">Layer guide</a></li>
             <li><a id="screenshotBtn" href="#" onclick="return false;" style="cursor:pointer;">Capture Screenshot</a></li>
         </ul>
@@ -682,6 +703,23 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <h3 class="modal-title" id="announcementTitle">Welcome</h3>
             <div class="modal-content" id="announcementContent">
                 Welcome to the Safer Parks Dashboard.
+            </div>
+        </div>
+    </div>
+
+    <!-- How to cite Modal -->
+    <div class="modal-overlay" id="modal-howToCite">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="howToCiteTitle" aria-describedby="content-howToCite">
+            <button type="button" class="modal-close-btn" aria-label="Close How to cite">&times;</button>
+            <h2 class="modal-title" id="howToCiteTitle">How to cite</h2>
+            <div class="modal-content" id="content-howToCite">
+                <p>If you use the Safer Parks Dashboard in your work, we ask that you please acknowledge and cite us.</p>
+                <h3>Dashboard</h3>
+                <p>If you use insights, screenshots, text, or images from the dashboard in your work, please cite us as follows:</p>
+                <p>Maeve Murphy Quinlan, Anna Barker, Melissa Barrientos, Victoria Houlden, Francesca Pontin (2026): The Safer Parks Dashboard. University of Leeds. https://doi.org/10.5518/1951. Accessed: <time id="citeAccessedDate"></time></p>
+                <h3>Data</h3>
+                <p>If you download data from the dashboard following the "Download Data" link, the appropriate citation is provided alongside the relevant dataset.</p>
+                <p>If you use data read directly from the dashboard, without downloading supplementary data files, please just use the dashboard citation provided above.</p>
             </div>
         </div>
     </div>
@@ -1315,50 +1353,70 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
         
         // Modal Management System
+        let modalTrigger = null;
+        const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+        function closeModal(modal) {
+            modal.classList.remove('active');
+            if (modalTrigger && document.contains(modalTrigger)) {
+                modalTrigger.focus();
+            }
+            modalTrigger = null;
+        }
+
         function setupModalHandlers() {
-            // Get all modal overlays and close buttons
             const modals = document.querySelectorAll('.modal-overlay');
-            const closeButtons = document.querySelectorAll('.modal-close-btn');
-            
-            // Close button click handlers
-            closeButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const modal = e.target.closest('.modal-overlay');
-                    if (modal) {
-                        modal.classList.remove('active');
-                    }
-                });
-            });
-            
-            // Modal overlay click handler (close when clicking outside the box)
+
             modals.forEach(modal => {
+                const closeBtn = modal.querySelector('.modal-close-btn');
+                if (closeBtn) closeBtn.addEventListener('click', () => closeModal(modal));
+
                 modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        modal.classList.remove('active');
-                    }
+                    if (e.target === modal) closeModal(modal);
                 });
             });
-            
-            // Escape key handler
+
             document.addEventListener('keydown', (e) => {
+                const active = document.querySelector('.modal-overlay.active');
+                if (!active) return;
                 if (e.key === 'Escape') {
-                    modals.forEach(modal => {
-                        if (modal.classList.contains('active')) {
-                            modal.classList.remove('active');
-                        }
-                    });
+                    closeModal(active);
+                } else if (e.key === 'Tab') {
+                    // Keep keyboard focus inside the open modal
+                    const items = [...active.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+                    if (!items.length) return;
+                    const first = items[0], last = items[items.length - 1];
+                    if (!active.contains(document.activeElement)) {
+                        e.preventDefault();
+                        first.focus();
+                    } else if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
                 }
             });
         }
-        
+
         // Open modal by ID
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) {
+                if (modalId === 'modal-howToCite') {
+                    const now = new Date();
+                    const el = document.getElementById('citeAccessedDate');
+                    el.dateTime = now.toLocaleDateString('en-CA');
+                    el.textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+                modalTrigger = document.activeElement;
                 modal.classList.add('active');
+                const closeBtn = modal.querySelector('.modal-close-btn');
+                if (closeBtn) closeBtn.focus();
             }
         }
-        
+
         // ========================================
         // ANNOUNCEMENT CONFIGURATION/MESSAGE OF THE DAY
         // ========================================
