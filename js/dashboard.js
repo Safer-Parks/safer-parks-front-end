@@ -196,13 +196,13 @@
         // Define basemap layers
         // Minimal: OSM with grayscale filter (clean, minimalist look)
         // Detailed: Standard OSM (full color detail)
-        const minimalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const minimalLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '(C) OpenStreetMap contributors',
             maxZoom: 19,
             className: 'minimal-basemap'
         });
         
-        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '(C) OpenStreetMap contributors',
             maxZoom: 19
         });
