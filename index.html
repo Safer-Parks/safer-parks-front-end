@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
   <!-- Cookie Consent by TermsFeed https://www.TermsFeed.com -->
-<script type="text/javascript" src="https://www.termsfeed.com/public/cookie-consent/4.2.0/cookie-consent.js" charset="UTF-8"></script>
+<script type="text/javascript" src="https://www.termsfeed.com/public/cookie-consent/4.2.0/cookie-consent.js" integrity="sha384-Y8CSukbW2jkGH00mKrWaxMRKkPJwdD958eBJ0d3FgqoEC3pMv1Q7SdJWQx2bOxuB" crossorigin="anonymous" charset="UTF-8"></script>
 <script type="text/javascript" charset="UTF-8">
 document.addEventListener('DOMContentLoaded', function () {
 cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","palette":"light","language":"en","page_load_consent_levels":["strictly-necessary"],"notice_banner_reject_button_hide":false,"preferences_center_close_button_hide":false,"page_refresh_confirmation_buttons":false,"website_name":"The Safer Parks Dashboard","website_privacy_policy_url":"https://safer-parks.github.io/privacy.html"});
@@ -11,8 +11,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
 
 <!-- Google Analytics -->
 <!-- Google tag (gtag.js) -->
-<script type="text/plain" data-cookie-consent="strictly-necessary" async src="https://www.googletagmanager.com/gtag/js?id=G-QH3HTXRPVH"></script>
-<script type="text/plain" data-cookie-consent="strictly-necessary">
+<script type="text/plain" data-cookie-consent="tracking" async src="https://www.googletagmanager.com/gtag/js?id=G-QH3HTXRPVH"></script>
+<script type="text/plain" data-cookie-consent="tracking">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -34,7 +34,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <link rel="stylesheet" href="css/pico.jade.min.css">
     
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" integrity="sha384-b8ANgTJvdlAnWM5YGMpKn7Kodm+1k7NYNG9zdjTCcZcKatzYHwZ0RLdWarbJJVzU" crossorigin="anonymous">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/light-theme.css">
@@ -721,7 +721,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <p>Source: Screenshot from the Safer Parks Dashboard (Murphy Quinlan et al., 2026), University of Leeds. DOI: 10.5518/1951. Includes OpenStreetMap-derived content and map data, together with derived datasets incorporating information licensed under the UK Open Government Licence (OGL). Where shown, toilet facility data are © 2025 Toilet Map (CC BY 4.0). Other third-party data may be subject to separate licences and attribution requirements; full layer attribution statements are available on the Safer Parks Dashboard. Captured: [Include date of capture here].</p>
                 <p>Please update the timestamp to match the date the image was captured or downloaded. Where multiple screenshots or images are included in a document, this can be included once as opposed to duplicated for each.</p>
                 <h3>Other uses</h3>
-                <p>For other citations, data reuse etc., please see the <a href="https://Safer-Parks.github.io/How_to_cite.html" target="_blank">citation and licensing guide</a> (opens in a new tab).</p>
+                <p>For other citations, data reuse etc., please see the <a href="https://Safer-Parks.github.io/How_to_cite.html" target="_blank" rel="noopener noreferrer">citation and licensing guide</a> (opens in a new tab).</p>
                 <br>
             </div>
         </div>
@@ -1333,13 +1333,13 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     </div>
 
     <!-- Leaflet JS -->
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" integrity="sha384-u5N8qJeJOO2iqNjIKTdl6KeKsEikMAmCUBPc6sC6uGpgL34aPJ4VgNhuhumedpEk" crossorigin="anonymous"></script>
     
     <!-- Proj4 for coordinate transformation -->
-    <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.0/dist/proj4.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.0/dist/proj4.js" integrity="sha384-U14wzrePlI+UpXk1Jpe45fK/C0yeI7rtwKzi9eM3Lj7LYjXlHNy0YacuWZIk7Hic" crossorigin="anonymous"></script>
     
     <!-- Chroma.js for color mapping -->
-    <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/dist/chroma.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js" integrity="sha384-VRhlkYEqoAXsWzoORIQL0gHdX0BvQoQG89GxEj7I4xlffttgMvoMsQr7E/IWGK9T" crossorigin="anonymous"></script>
     
     <!-- Main Application Script -->
     <script src="js/park-feature-categories.js"></script>
