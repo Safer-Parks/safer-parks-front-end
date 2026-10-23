@@ -1359,6 +1359,22 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         let modalTrigger = null;
         const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
+        function formatPopupNumber(value, digits = 1) {
+            return typeof value === 'number' && Number.isFinite(value)
+                ? value.toLocaleString('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+                : 'Unavailable';
+        }
+
         function closeModal(modal) {
             modal.classList.remove('active');
             if (modalTrigger && document.contains(modalTrigger)) {
@@ -2109,14 +2125,14 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         };
                     },
                     onEachFeature: (feature, layer) => {
-                        layer.bindPopup(`<strong>${feature.properties.name}</strong>`);
+                        layer.bindPopup(`<strong>${escapeHtml(feature.properties.name || 'Park')}</strong>`);
                         
                         // Add hover tooltip with park name and area
                         const parkName = feature.properties.name;
                         const areaLabel = feature.properties.area === null
                             ? 'Area unavailable'
-                            : `Area: ${feature.properties.area.toLocaleString('en-GB', { maximumFractionDigits: 0 })} m²`;
-                        let tooltipContent = `<strong>${parkName}</strong><br/>${areaLabel}<br/><span style="display:inline-block;margin-top:0.25rem;padding:0.15rem 0.4rem;border-radius:0.25rem;background:#e8eee4;color:#30452d;font-weight:600;">${feature.properties.sizeCategory}</span>`;
+                            : `Area: ${formatPopupNumber(feature.properties.area, 0)} m²`;
+                        let tooltipContent = `<strong>${escapeHtml(parkName)}</strong><br/>${areaLabel}<br/><span style="display:inline-block;margin-top:0.25rem;padding:0.15rem 0.4rem;border-radius:0.25rem;background:#e8eee4;color:#30452d;font-weight:600;">${escapeHtml(feature.properties.sizeCategory)}</span>`;
                         
                         // Find the park ID for this feature
                         const parkData = mapState.sortedParks.find(p => p.name === parkName);
@@ -2247,7 +2263,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 fillOpacity: 0.5
                             }),
                             onEachFeature: (_feature, layer) => {
-                                layer.bindTooltip(featureName, {
+                                layer.bindTooltip(escapeHtml(featureName), {
                                     permanent: false,
                                     direction: 'top',
                                     className: getFeatureTooltipClass(category.color)
@@ -2319,7 +2335,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 pane: 'parkBoundaryPane',
                 style: { color: '#4F6C37', weight: 3, opacity: 1, fill: false },
                 onEachFeature: (feature, layer) => {
-                    layer.bindPopup(`<strong>${feature.properties.name}</strong>`, { closeButton: true });
+                    layer.bindPopup(`<strong>${escapeHtml(feature.properties.name || 'Park')}</strong>`, { closeButton: true });
                     layer.openPopup();
                 }
             });
@@ -2513,7 +2529,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         );
                         
                         // Add popup
-                        marker.bindPopup(`<strong>${entranceType}</strong><br/>Source: ${source}`);
+                        marker.bindPopup(`<strong>${escapeHtml(entranceType)}</strong><br/>Source: ${escapeHtml(source)}`);
                         
                         entranceMarkers.addLayer(marker);
                     });
@@ -2653,7 +2669,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         });
                         
                         // Add popup with visibility percentage
-                        hexagon.bindPopup(`<strong>Visibility</strong><br/>${visibility.toFixed(1)}%`);
+                        hexagon.bindPopup(`<strong>Visibility</strong><br/>${formatPopupNumber(visibility)}%`);
                         
                         hexagonLayer.addLayer(hexagon);
                     });
@@ -2784,7 +2800,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 fillOpacity: 0.6,
                                 fillColor: lowColor
                             });
-                            lowHexagon.bindPopup(`<strong>Low Foliage (&lt;0.5m)</strong><br/>${lowVal.toFixed(1)}%`);
+                            lowHexagon.bindPopup(`<strong>Low Foliage (&lt;0.5m)</strong><br/>${formatPopupNumber(lowVal)}%`);
                             lowLayer.addLayer(lowHexagon);
                         }
                         
@@ -2798,7 +2814,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 fillOpacity: 0.6,
                                 fillColor: midColor
                             });
-                            midHexagon.bindPopup(`<strong>Mid Foliage (0.5-2m)</strong><br/>${midVal.toFixed(1)}%`);
+                            midHexagon.bindPopup(`<strong>Mid Foliage (0.5-2m)</strong><br/>${formatPopupNumber(midVal)}%`);
                             midLayer.addLayer(midHexagon);
                         }
                         
@@ -2818,10 +2834,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             const meanHeight = feature.properties.mean_height || 0;
                             
                             // Bind popup with foliage percentage
-                            tallHexagon.bindPopup(`<strong>Tall Foliage (2m+)</strong><br/>${tallVal.toFixed(1)}%`);
+                            tallHexagon.bindPopup(`<strong>Tall Foliage (2m+)</strong><br/>${formatPopupNumber(tallVal)}%`);
                             
                             // Bind tooltip with height information (shown on hover)
-                            tallHexagon.bindTooltip(`<strong>Heights:</strong><br/>Max: ${maxHeight.toFixed(2)}m<br/>Mean: ${meanHeight.toFixed(2)}m`, {
+                            tallHexagon.bindTooltip(`<strong>Heights:</strong><br/>Max: ${formatPopupNumber(maxHeight, 2)}m<br/>Mean: ${formatPopupNumber(meanHeight, 2)}m`, {
                                 permanent: false,
                                 direction: 'top',
                                 className: 'foliage-tooltip'
@@ -2960,10 +2976,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         });
                         
                         // Add popup with NACH value
-                        line.bindPopup(`<strong>Predicted Route Popularity</strong><br/>Choice: ${nachValue.toFixed(3)}`);
+                        line.bindPopup(`<strong>Predicted Route Popularity</strong><br/>Choice: ${formatPopupNumber(nachValue, 3)}`);
                         
                         // Add tooltip showing value on hover
-                        line.bindTooltip(`Choice: ${nachValue.toFixed(3)}`, { 
+                        line.bindTooltip(`Choice: ${formatPopupNumber(nachValue, 3)}`, { 
                             permanent: false, 
                             direction: 'top',
                             className: 'nach-tooltip'
@@ -3071,8 +3087,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 
                                 // Add popup with lamp info
                                 const popupContent = `<strong>Street Lamp</strong><br/>` +
-                                    `ID: ${feature.properties.osmid || 'N/A'}<br/>` +
-                                    `Source: ${feature.properties.source || 'OSM'}`;
+                                    `ID: ${escapeHtml(feature.properties.osmid || 'N/A')}<br/>` +
+                                    `Source: ${escapeHtml(feature.properties.source || 'OSM')}`;
                                 marker.bindPopup(popupContent);
                                 
                                 // Add tooltip
@@ -3174,7 +3190,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             // Add popup with pocket park info if available
                             let popupContent = '<strong>Pocket Park</strong>';
                             if (feature.properties && feature.properties.name) {
-                                popupContent = `<strong>${feature.properties.name}</strong>`;
+                                popupContent = `<strong>${escapeHtml(feature.properties.name)}</strong>`;
                             }
                             layer.bindPopup(popupContent);
                             
@@ -3255,9 +3271,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         const props = feature.properties;
                         
                         // Build popup content
-                        let popupContent = `<strong>${props.name || 'Toilet Facility'}</strong><br/>`;
-                        popupContent += `<strong>Access:</strong> ${props.accessible === 'True' ? 'Accessible' : 'Not accessible'}<br/>`;
-                        popupContent += `<strong>Payment:</strong> ${props.payment_info || 'Unknown'}<br/>`;
+                        let popupContent = `<strong>${escapeHtml(props.name || 'Toilet Facility')}</strong><br/>`;
+                        popupContent += `<strong>Access:</strong> ${escapeHtml(props.accessible === 'True' ? 'Accessible' : 'Not accessible')}<br/>`;
+                        popupContent += `<strong>Payment:</strong> ${escapeHtml(props.payment_info || 'Unknown')}<br/>`;
                         
                         // Add facility info
                         const facilities = [];
@@ -3271,7 +3287,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         // Create marker
                         const marker = L.marker(toiletCoords, { icon: blueSquareIcon });
                         marker.bindPopup(popupContent);
-                        marker.bindTooltip(props.name || 'Toilet', { 
+                        marker.bindTooltip(escapeHtml(props.name || 'Toilet'), { 
                             permanent: false, 
                             direction: 'top',
                             className: 'toilet-tooltip'
@@ -3357,7 +3373,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                         // Build popup content
                         let popupContent = `<strong>Bench</strong><br/>`;
                         if (props.name) {
-                            popupContent = `<strong>${props.name}</strong><br/>`;
+                            popupContent = `<strong>${escapeHtml(props.name)}</strong><br/>`;
                         }
                         popupContent += `<strong>Type:</strong> Bench<br/>`;
                         
@@ -3453,7 +3469,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             
                             // Add popup with cycling route info if available
                             const popupContent = feature.properties.name ? 
-                                `<strong>${feature.properties.name}</strong>` : 
+                                `<strong>${escapeHtml(feature.properties.name)}</strong>` : 
                                 '<strong>Cycling Route</strong>';
                             line.bindPopup(popupContent);
                             
@@ -3474,7 +3490,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 
                                 // Add popup with cycling route info if available
                                 const popupContent = feature.properties.name ? 
-                                    `<strong>${feature.properties.name}</strong>` : 
+                                    `<strong>${escapeHtml(feature.properties.name)}</strong>` : 
                                     '<strong>Cycling Route</strong>';
                                 line.bindPopup(popupContent);
                                 
@@ -3550,7 +3566,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             
                             // Add popup with walking route info if available
                             const popupContent = feature.properties.name ? 
-                                `<strong>${feature.properties.name}</strong>` : 
+                                `<strong>${escapeHtml(feature.properties.name)}</strong>` : 
                                 '<strong>Walking Route</strong>';
                             line.bindPopup(popupContent);
                             
@@ -3570,7 +3586,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 
                                 // Add popup with walking route info if available
                                 const popupContent = feature.properties.name ? 
-                                    `<strong>${feature.properties.name}</strong>` : 
+                                    `<strong>${escapeHtml(feature.properties.name)}</strong>` : 
                                     '<strong>Walking Route</strong>';
                                 line.bindPopup(popupContent);
                                 
@@ -3946,7 +3962,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                             // Create a table with demographic variables and their LQ values
                             let tableRows = '';
                             for (const [key, value] of Object.entries(props)) {
-                                if (key.toLowerCase().includes('lq') && typeof value === 'number') {
+                                if (key.toLowerCase().includes('lq') && typeof value === 'number' && Number.isFinite(value)) {
                                     // Extract the demographic variable name (remove _lq suffix)
                                     const varName = key.replace(/_lq$/i, '').replace(/_/g, ' ');
                                     const displayName = varName.charAt(0).toUpperCase() + varName.slice(1);
@@ -3958,8 +3974,8 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                     
                                     tableRows += `
                                         <tr style="border-bottom: 1px solid #e0e0e0;">
-                                            <td style="padding: 6px 8px; text-align: left;">${displayName}</td>
-                                            <td style="padding: 6px 8px; text-align: center; font-weight: bold;">${value.toFixed(2)}</td>
+                                            <td style="padding: 6px 8px; text-align: left;">${escapeHtml(displayName)}</td>
+                                            <td style="padding: 6px 8px; text-align: center; font-weight: bold;">${formatPopupNumber(value, 2)}</td>
                                             <td style="padding: 6px 8px; text-align: center;">${symbol}</td>
                                         </tr>
                                     `;
@@ -4074,7 +4090,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                                 
                                 // Add popup with cycling route info if available
                                 if (feature.properties && feature.properties.name) {
-                                    line.bindPopup(`<strong>${feature.properties.name}</strong>`);
+                                    line.bindPopup(`<strong>${escapeHtml(feature.properties.name)}</strong>`);
                                 }
                                 
                                 // Add tooltip
