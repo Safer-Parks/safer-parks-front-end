@@ -27,7 +27,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Safer Parks Dashboard</title>
     
-    <!-- Favicon --
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="css/icon-parks4.svg">
     
     <!-- Pico CSS Framework - Jade Palette -->
@@ -2537,21 +2537,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
 
         function toDeg(rad) {
             return rad * 180 / Math.PI;
-        }
-
-        // Calculate distance between two points in meters (haversine formula)
-        function haversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371000; // Earth radius in meters
-            const phi1 = toRad(lat1);
-            const phi2 = toRad(lat2);
-            const deltaPhi = toRad(lat2 - lat1);
-            const deltaLambda = toRad(lon2 - lon1);
-
-            const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-                      Math.cos(phi1) * Math.cos(phi2) *
-                      Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
         }
 
         // Calculate destination point given distance and bearing
