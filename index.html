@@ -661,7 +661,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <!-- Map Container -->
     <main>
         <div id="loadingNotice" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span id="loadingNoticeText">Loading...</span></div>
-        <div id="map"></div>
+        <div id="map" role="region" aria-label="Interactive park map"></div>
     </main>
 
     <!-- Legend Sidebar (Right) -->
@@ -1371,6 +1371,15 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             const modals = document.querySelectorAll('.modal-overlay');
 
             modals.forEach(modal => {
+                const dialog = modal.querySelector('.modal-box');
+                const title = dialog && dialog.querySelector('.modal-title');
+                if (dialog && title) {
+                    if (!title.id) title.id = `${modal.id}-title`;
+                    dialog.setAttribute('role', 'dialog');
+                    dialog.setAttribute('aria-modal', 'true');
+                    dialog.setAttribute('aria-labelledby', title.id);
+                }
+
                 const closeBtn = modal.querySelector('.modal-close-btn');
                 if (closeBtn) closeBtn.addEventListener('click', () => closeModal(modal));
 
