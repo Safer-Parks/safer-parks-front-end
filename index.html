@@ -492,6 +492,13 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             color: #333;
         }
 
+        .modal-close-btn:focus-visible,
+        nav li a:focus-visible,
+        nav li .nav-link-btn:focus-visible {
+            outline: 3px solid #572B70;
+            outline-offset: 2px;
+        }
+
         /* Modal title */
         .modal-title {
             font-family: 'MrDodo', serif;
@@ -531,8 +538,21 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             font-family: 'MrDodo', serif;
         }
         
-        nav li a:hover {
+        nav li a:hover,
+        nav li .nav-link-btn:hover {
             text-decoration: underline;
+        }
+
+        /* Native button that looks identical to the nav links */
+        nav li .nav-link-btn {
+            all: unset;
+            box-sizing: border-box;
+            cursor: pointer;
+            color: #572B70;
+            font-weight: 500;
+            font-family: 'MrDodo', serif;
+            font-size: inherit;
+            line-height: inherit;
         }
 
     </style>
@@ -542,8 +562,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
     <nav>
         <ul>
             <li><a href="https://Safer-Parks.github.io" target="_blank" rel="noopener noreferrer"><strong>The Safer Parks Dashboard</strong></a><span id="navParkName" style="display:none; margin-left: 2rem;"></span></li>
-            <li style="margin-left: auto;"><a href="https://safer-parks-landing-page-test.pages.dev/faqs" target="_blank" rel="noopener noreferrer">FAQs</a></li>
+            <li style="margin-left: auto;"><button type="button" id="citeBtn" class="nav-link-btn" aria-haspopup="dialog" onclick="openModal('modal-howToCite')">How to cite</button></li>
+            <li><a href="https://safer-parks-landing-page-test.pages.dev/faqs" target="_blank" rel="noopener noreferrer">FAQs</a></li>
             <li ><a href="https://Safer-Parks.github.io/guide.html" target="_blank" rel="noopener noreferrer">Layer guide</a></li>
+            <li><a id="screenshotBtn" href="#" onclick="return false;" style="cursor:pointer;">Capture Screenshot</a></li>
         </ul>
     </nav>
 
@@ -557,7 +579,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                     class="accordion-trigger" 
                     aria-controls="controls-content"
                     id="controls-heading">
-                    <span class="accordion-title">Explore Parks</span>
+                    <span class="accordion-title" id="exploreTitle">Explore Parks</span>
                     <span class="accordion-icon" aria-hidden="true"></span>
                 </button>
             </h2>
@@ -681,6 +703,26 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <h3 class="modal-title" id="announcementTitle">Welcome</h3>
             <div class="modal-content" id="announcementContent">
                 Welcome to the Safer Parks Dashboard.
+            </div>
+        </div>
+    </div>
+
+    <!-- How to cite Modal -->
+    <div class="modal-overlay" id="modal-howToCite">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="howToCiteTitle" aria-describedby="content-howToCite">
+            <button type="button" class="modal-close-btn" aria-label="Close How to cite">&times;</button>
+            <h2 class="modal-title" id="howToCiteTitle">How to cite</h2>
+            <div class="modal-content" id="content-howToCite">
+                <p>If you use the Safer Parks Dashboard in your work, we ask that you please acknowledge and cite us.</p>
+                <p>If you use insights, screenshots, text, or images from the dashboard in your work, please cite us as follows:</p>
+                <p>Maeve Murphy Quinlan, Anna Barker, Melissa Barrientos, Victoria Houlden, Francesca Pontin (2026): The Safer Parks Dashboard. University of Leeds. https://doi.org/10.5518/1951. Accessed: <time id="citeAccessedDate"></time></p>
+                <h3>Images and screenshots</h3>
+                <p>Please include a caption containing this information in any published screenshots from the dashboard (note that this is not required for internal documents):</p>
+                <p>Source: Screenshot from the Safer Parks Dashboard (Murphy Quinlan et al., 2026), University of Leeds. DOI: 10.5518/1951. Includes OpenStreetMap-derived content and map data, together with derived datasets incorporating information licensed under the UK Open Government Licence (OGL). Where shown, toilet facility data are © 2025 Toilet Map (CC BY 4.0). Other third-party data may be subject to separate licences and attribution requirements; full layer attribution statements are available on the Safer Parks Dashboard. Captured: [Include date of capture here].</p>
+                <p>Please update the timestamp to match the date the image was captured or downloaded. Where multiple screenshots or images are included in a document, this can be included once as opposed to duplicated for each.</p>
+                <h3>Other uses</h3>
+                <p>For other citations, data reuse etc., please see the <a href="https://Safer-Parks.github.io/How_to_cite.html" target="_blank">citation and licensing guide</a> (opens in a new tab).</p>
+                <br>
             </div>
         </div>
     </div>
@@ -1314,50 +1356,70 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
         
         // Modal Management System
+        let modalTrigger = null;
+        const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+        function closeModal(modal) {
+            modal.classList.remove('active');
+            if (modalTrigger && document.contains(modalTrigger)) {
+                modalTrigger.focus();
+            }
+            modalTrigger = null;
+        }
+
         function setupModalHandlers() {
-            // Get all modal overlays and close buttons
             const modals = document.querySelectorAll('.modal-overlay');
-            const closeButtons = document.querySelectorAll('.modal-close-btn');
-            
-            // Close button click handlers
-            closeButtons.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const modal = e.target.closest('.modal-overlay');
-                    if (modal) {
-                        modal.classList.remove('active');
-                    }
-                });
-            });
-            
-            // Modal overlay click handler (close when clicking outside the box)
+
             modals.forEach(modal => {
+                const closeBtn = modal.querySelector('.modal-close-btn');
+                if (closeBtn) closeBtn.addEventListener('click', () => closeModal(modal));
+
                 modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        modal.classList.remove('active');
-                    }
+                    if (e.target === modal) closeModal(modal);
                 });
             });
-            
-            // Escape key handler
+
             document.addEventListener('keydown', (e) => {
+                const active = document.querySelector('.modal-overlay.active');
+                if (!active) return;
                 if (e.key === 'Escape') {
-                    modals.forEach(modal => {
-                        if (modal.classList.contains('active')) {
-                            modal.classList.remove('active');
-                        }
-                    });
+                    closeModal(active);
+                } else if (e.key === 'Tab') {
+                    // Keep keyboard focus inside the open modal
+                    const items = [...active.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+                    if (!items.length) return;
+                    const first = items[0], last = items[items.length - 1];
+                    if (!active.contains(document.activeElement)) {
+                        e.preventDefault();
+                        first.focus();
+                    } else if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
                 }
             });
         }
-        
+
         // Open modal by ID
         function openModal(modalId) {
             const modal = document.getElementById(modalId);
             if (modal) {
+                if (modalId === 'modal-howToCite') {
+                    const now = new Date();
+                    const el = document.getElementById('citeAccessedDate');
+                    el.dateTime = now.toLocaleDateString('en-CA');
+                    el.textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+                modalTrigger = document.activeElement;
                 modal.classList.add('active');
+                const closeBtn = modal.querySelector('.modal-close-btn');
+                if (closeBtn) closeBtn.focus();
             }
         }
-        
+
         // ========================================
         // ANNOUNCEMENT CONFIGURATION/MESSAGE OF THE DAY
         // ========================================
@@ -1367,7 +1429,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             
             // Unique ID for this announcement (change to show a different announcement)
             // Users see each unique ID only once (tracked via localStorage)
-            id: 'announcement-20250927',
+            id: 'announcement-20251020',
             
             // Modal title
             title: 'Welcome to the Safer Parks Dashboard',
@@ -1379,6 +1441,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <ul>
                     <li>Select a region and authority from the left panel</li>
                     <li>Toggle data layers in the legend to explore different insights</li>
+                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the "Capture Screenshot" button. Note: the required permission pop-up may not work with your browser in full-screen mode.</li>
                 </ul>
                 <p>See our Layer Guide linked in the navigation bar above, or click on the green info icon next to each entry in the legend.</p>
             `
@@ -1700,6 +1763,18 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             }
         }
         
+        // Update sidebar header to the most specific selection
+        function updateExploreTitle() {
+            const selectedText = (id) => {
+                const sel = document.getElementById(id);
+                return sel && sel.value !== '' && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].textContent : '';
+            };
+            document.getElementById('exploreTitle').textContent =
+                selectedText('parks') || selectedText('localAuthority') || selectedText('regionSelect') || 'Explore Parks';
+        }
+        ['regionSelect', 'localAuthority', 'parks'].forEach(id =>
+            document.getElementById(id).addEventListener('change', updateExploreTitle));
+
         // Handle region selection
         document.getElementById('regionSelect').addEventListener('change', async (e) => {
             const regionId = e.target.value;
@@ -1708,6 +1783,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 document.getElementById('localAuthority').innerHTML = '<option value="">Select a region first</option>';
                 document.getElementById('parks').disabled = true;
                 document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
+                updateExploreTitle();
                 return;
             }
             
@@ -1721,6 +1797,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             document.getElementById('localAuthority').innerHTML = '<option value="">Select an area</option>';
             document.getElementById('parks').disabled = true;
             document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
+            updateExploreTitle();
             
             // Load authorities for the selected region
             await loadAuthorities();
@@ -1745,6 +1822,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             if (!authorityId) {
                 document.getElementById('parks').disabled = true;
                 document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
+                updateExploreTitle();
                 return;
             }
             
@@ -2197,6 +2275,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 return;
             }
             
+            updateExploreTitle();
             const selectedPark = mapState.sortedParks[selectedIndex];
             
             if (!selectedPark || !selectedPark.geometry) {
@@ -5031,6 +5110,49 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
         }
         
         // Reset map view
+        // Screenshot: grabs a single frame of the current tab's pixels (no re-rendering of map layers)
+        document.getElementById('screenshotBtn').addEventListener('click', async () => {
+            let stream;
+            // Create overlay to block all mouse events during screenshot
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:all;z-index:999999;';
+            document.body.appendChild(overlay);
+            
+            try {
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    preferCurrentTab: true,
+                    selfBrowserSurface: 'include'
+                });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.muted = true;
+                await video.play();
+                await new Promise(r => setTimeout(r, 500)); // let the picker UI disappear and rendering complete
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                canvas.toBlob(blob => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `safer-parks-${new Date().toISOString().slice(0, 10)}.png`; // browser auto-numbers repeats: (1), (2)...
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                }, 'image/png');
+                // Keep overlay for 2 more seconds after capture to prevent click interference
+                await new Promise(r => setTimeout(r, 2000));
+            } catch (err) {
+                if (err.name !== 'NotAllowedError') {
+                    console.error('Screenshot failed:', err);
+                    alert('Screenshot failed: ' + err.message);
+                }
+            } finally {
+                if (stream) stream.getTracks().forEach(t => t.stop());
+                overlay.remove();
+            }
+        });
+
         document.getElementById('resetMapBtn').addEventListener('click', () => {
             map.setView([54.0, -1.5], 7);
             if (mapState.featuresInAndNearParksLayer) {
@@ -5105,6 +5227,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             document.getElementById('layerHint').style.display = 'none';
             document.getElementById('layerHR').style.display = 'none';
             document.getElementById('parks').value = '';
+            updateExploreTitle();
             
             // Hide park name in nav
             const navParkName = document.getElementById('navParkName');
