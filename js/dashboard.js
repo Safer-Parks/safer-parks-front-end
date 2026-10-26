@@ -173,9 +173,12 @@
         // Remote data configuration - Load from GitHub instead of local files
         let GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main';
         let selectedRegion = null;
+        const REGION_OVERVIEW_MAX_ZOOM = 8;
+        const REGION_DETAIL_MAX_ZOOM = 19;
         
         const map = L.map('map', {
-            zoomControl: false
+            zoomControl: false,
+            maxZoom: REGION_OVERVIEW_MAX_ZOOM
         }).setView([54.0, -1.5], 7);
 
         // Dedicated pane keeps the park boundary above all other vector layers
@@ -384,11 +387,11 @@
 
                 mapState.regionsLayer = L.geoJSON(geojson, {
                     style: {
-                        color: '#572B70',
+                        color: '#6D597A',
                         weight: 2,
-                        opacity: 0.9,
-                        fillColor: '#572B70',
-                        fillOpacity: 0.12
+                        opacity: 0.5,
+                        fillColor: '#6D597A',
+                        fillOpacity: 0.2
                     },
                     onEachFeature: (feature, layer) => {
                         const properties = feature.properties || {};
@@ -404,7 +407,7 @@
                         layer.bindTooltip(tooltip, { sticky: true });
 
                         layer.on({
-                            mouseover: () => layer.setStyle({ weight: 3, fillOpacity: 0.25 }),
+                            mouseover: () => layer.setStyle({ weight: 3, fillOpacity: 0.4 }),
                             mouseout: () => mapState.regionsLayer.resetStyle(layer),
                             click: () => {
                                 const regionSelect = document.getElementById('regionSelect');
@@ -523,6 +526,7 @@
             // Update global region and GITHUB_BASE_URL
             selectedRegion = regionId;
             GITHUB_BASE_URL = `https://raw.githubusercontent.com/Safer-Parks/${regionId}/refs/heads/main`;
+            map.setMaxZoom(REGION_DETAIL_MAX_ZOOM);
 
             if (mapState.regionsLayer && map.hasLayer(mapState.regionsLayer)) {
                 const selectedRegionFeature = mapState.regionsLayer.getLayers().find(layer =>
