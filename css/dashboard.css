@@ -460,8 +460,9 @@ aside#legendPanel {
 
 /* Pocket parks tooltip styling */
 .pocket-park-tooltip {
-    background: rgba(87, 43, 112, 0.95) !important;
-    color: white !important;
+    background: rgba(255, 175, 145, 0.95) !important;
+    color: #000 !important;
+    border-color: rgba(255, 107, 53, 0.95) !important;
     border-radius: 4px;
     padding: 8px 12px !important;
     font-size: 0.85rem;
@@ -469,7 +470,7 @@ aside#legendPanel {
 }
 
 .pocket-park-tooltip::before {
-    border-top-color: rgba(87, 43, 112, 0.95) !important;
+    border-top-color: rgba(255, 107, 53, 0.95) !important;
 }
 
 /* Features tooltip styling */
