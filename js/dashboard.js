@@ -288,6 +288,7 @@
             currentAuthority: null,
             parksLayer: null,
             allParksLayer: null,
+            regionsLayer: null,
             authoritiesLayer: null,
             allParksData: [],
             sortedParks: [],
@@ -330,6 +331,9 @@
         async function loadRegions() {
             try {
                 const response = await fetch('regions.json');
+                if (!response.ok) {
+                    throw new Error(`Failed to load regions: ${response.status} ${response.statusText}`);
+                }
                 const regionsData = await response.json();
                 const select = document.getElementById('regionSelect');
                 
@@ -339,7 +343,7 @@
                 // Add default option
                 const defaultOption = document.createElement('option');
                 defaultOption.value = '';
-                defaultOption.textContent = 'Select a region';
+                defaultOption.textContent = 'Select a region or choose on the map';
                 select.appendChild(defaultOption);
                 
                 // Group regions by country (ID prefix: E = England, W = Wales)
@@ -367,6 +371,56 @@
                 console.log(`Loaded ${regionsData.regions.length} regions`);
             } catch (err) {
                 console.error('Error loading regions:', err);
+            }
+        }
+
+        async function loadRegionBoundaries() {
+            try {
+                const response = await fetch('regions_map.geojson');
+                if (!response.ok) {
+                    throw new Error(`Failed to load region boundaries: ${response.status} ${response.statusText}`);
+                }
+                const geojson = await response.json();
+
+                mapState.regionsLayer = L.geoJSON(geojson, {
+                    style: {
+                        color: '#572B70',
+                        weight: 2,
+                        opacity: 0.9,
+                        fillColor: '#572B70',
+                        fillOpacity: 0.12
+                    },
+                    onEachFeature: (feature, layer) => {
+                        const properties = feature.properties || {};
+                        const regionName = properties.country === 'Wales'
+                            ? properties.name
+                            : properties.placename;
+                        const tooltip = document.createElement('span');
+                        const name = document.createElement('span');
+                        name.textContent = regionName || properties.placename || 'Unnamed region';
+                        const id = document.createElement('span');
+                        id.textContent = `ID: ${properties.unique_id || feature.id || 'Unavailable'}`;
+                        tooltip.append(name, document.createElement('br'), id);
+                        layer.bindTooltip(tooltip, { sticky: true });
+
+                        layer.on({
+                            mouseover: () => layer.setStyle({ weight: 3, fillOpacity: 0.25 }),
+                            mouseout: () => mapState.regionsLayer.resetStyle(layer),
+                            click: () => {
+                                const regionSelect = document.getElementById('regionSelect');
+                                regionSelect.value = properties.unique_id;
+                                regionSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        });
+                    }
+                }).addTo(map);
+
+                const bounds = mapState.regionsLayer.getBounds();
+                if (bounds.isValid()) {
+                    map.fitBounds(bounds, { padding: [30, 30] });
+                }
+            } catch (error) {
+                console.error('Error loading region boundaries:', error);
             }
         }
         
@@ -469,6 +523,16 @@
             // Update global region and GITHUB_BASE_URL
             selectedRegion = regionId;
             GITHUB_BASE_URL = `https://raw.githubusercontent.com/Safer-Parks/${regionId}/refs/heads/main`;
+
+            if (mapState.regionsLayer && map.hasLayer(mapState.regionsLayer)) {
+                const selectedRegionFeature = mapState.regionsLayer.getLayers().find(layer =>
+                    layer.feature.properties.unique_id === regionId
+                );
+                if (selectedRegionFeature) {
+                    map.fitBounds(selectedRegionFeature.getBounds(), { padding: [30, 30] });
+                }
+                map.removeLayer(mapState.regionsLayer);
+            }
             
             // Clear existing authorities
             mapState.authorities = [];
@@ -3940,7 +4004,7 @@
             
             // Initialize data on page load
             (async () => {
-                await loadRegions();
+                await Promise.all([loadRegions(), loadRegionBoundaries()]);
                 // loadAuthorities() and regional layers are called automatically when a region is selected
             })();
         });
