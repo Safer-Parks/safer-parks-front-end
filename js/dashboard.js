@@ -683,7 +683,11 @@
             if (areaM2 > 100000) {
                 return { areaM2, sizeCategory: 'Large park' };
             }
-            return { areaM2, sizeCategory: 'Medium park' };
+            return { areaM2, sizeCategory: 'Small/Medium park' };
+        }
+
+        function getParkSizeColor(sizeCategory) {
+            return sizeCategory === 'Large park' ? '#572B70' : '#4F6C37';
         }
 
         async function loadParksForAuthority(authority) {
@@ -837,7 +841,7 @@
                 mapState.allParksLayer = L.geoJSON(allParksGeoJSON, {
                     style: function(feature) {
                         // Use purple for large parks (>10ha), dark green for others
-                        const color = feature.properties.sizeCategory === 'Large park' ? '#572B70' : '#4F6C37';
+                        const color = getParkSizeColor(feature.properties.sizeCategory);
                         return {
                             color: color,
                             weight: 4,
@@ -854,7 +858,8 @@
                         const areaLabel = feature.properties.area === null
                             ? 'Area unavailable'
                             : `Area: ${formatPopupNumber(feature.properties.area, 0)} m²`;
-                        let tooltipContent = `<strong>${escapeHtml(parkName)}</strong><br/>${areaLabel}<br/><span style="display:inline-block;margin-top:0.25rem;padding:0.15rem 0.4rem;border-radius:0.25rem;background:#e8eee4;color:#30452d;font-weight:600;">${escapeHtml(feature.properties.sizeCategory)}</span>`;
+                        const sizeColor = getParkSizeColor(feature.properties.sizeCategory);
+                        let tooltipContent = `<strong>${escapeHtml(parkName)}</strong><br/>${areaLabel}<br/><span style="display:inline-block;margin-top:0.25rem;padding:0.15rem 0.4rem;border-radius:0.25rem;background:${sizeColor};color:#fff;font-weight:600;">${escapeHtml(feature.properties.sizeCategory)}</span>`;
                         
                         // Find the park ID for this feature
                         const parkData = mapState.sortedParks.find(p => p.name === parkName);
@@ -3334,7 +3339,7 @@
                 !(mapState.parkBoundaryLayer && mapState.parkBoundaryLayer.visible)) {
                 visibleLayers.push(
                     { id: 'area-parks-large', name: 'Large park (>10ha)', type: 'filled-large' },
-                    { id: 'area-parks-medium', name: 'Medium park', type: 'filled' }
+                    { id: 'area-parks-medium', name: 'Small/Medium park', type: 'filled' }
                 );
             }
             
