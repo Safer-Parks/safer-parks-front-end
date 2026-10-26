@@ -1572,21 +1572,21 @@
                     // Store layer info for toggling
                     mapState.foliageLowLayer = {
                         id: 'foliage-low-hexagons',
-                        name: 'Low Foliage (<0.5m)',
+                        name: 'Low Foliage or Structures (<0.5m)',
                         layer: lowLayer,
                         visible: false
                     };
                     
                     mapState.foliageMidLayer = {
                         id: 'foliage-mid-hexagons',
-                        name: 'Mid Foliage (0.5-2m)',
+                        name: 'Mid Foliage or Structures (0.5-2m)',
                         layer: midLayer,
                         visible: false
                     };
                     
                     mapState.foliageTallLayer = {
                         id: 'foliage-tall-hexagons',
-                        name: 'Tall Foliage (2m+)',
+                        name: 'Tall Foliage or Structures (2m+)',
                         layer: tallLayer,
                         visible: false
                     };
@@ -1931,7 +1931,7 @@
                 // Store layer info for toggling
                 mapState.pocketParksLayer = {
                     id: 'pocket-parks',
-                    name: 'Pocket Parks',
+                    name: 'Pocket Parks & Small Greenspaces',
                     layer: pocketParksGroup,
                     visible: false
                 };
@@ -3292,7 +3292,7 @@
             if (mapState.pocketParksLayer && mapState.pocketParksLayer.visible) {
                 visibleLayers.push({
                     id: 'pocket-parks',
-                    name: 'Pocket Parks',
+                    name: 'Pocket Parks & Small Greenspaces',
                     type: 'pocket-parks'
                 });
             }
