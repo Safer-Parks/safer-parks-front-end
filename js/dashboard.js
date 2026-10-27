@@ -2264,11 +2264,13 @@
                 const lightingGroup = L.featureGroup();
                 let filesLoaded = 0;
                 let lightsAdded = 0;
+                let authorityFileFound = false;
                 
                 // Load lighting points
                 try {
                     const lightingResponse = await fetch(`${authPath}${lightingFilename}`);
                     if (lightingResponse.ok) {
+                        authorityFileFound = true;
                         const lightingData = await lightingResponse.json();
                         console.log(`Lighting data loaded:`, lightingData);
                         
@@ -2316,7 +2318,16 @@
                     console.log(`Supplemental lighting layer created successfully`);
                 } else {
                     console.log(`No supplemental lighting files loaded for park: ${parkId}`);
-                    mapState.supplementalLightingLayer = null;
+                    // Placeholder renders a greyed-out toggle with an explanation
+                    mapState.supplementalLightingLayer = {
+                        id: 'supplemental-lighting',
+                        name: 'Street Lighting (local data)',
+                        layer: null,
+                        visible: false,
+                        unavailableMessage: authorityFileFound
+                            ? 'Lighting data not available for this park'
+                            : `Lighting data not available for ${mapState.currentAuthority.name}`
+                    };
                 }
             } catch (error) {
                 console.error('Error in loadSupplementalLighting:', error);
@@ -2741,8 +2752,13 @@
             container.innerHTML = '';
             
             layers.forEach(layerInfo => {
+                const unavailable = !!layerInfo.unavailableMessage;
                 const label = document.createElement('label');
                 label.className = 'toggle-label';
+                if (unavailable) {
+                    label.style.opacity = '0.5';
+                    label.style.cursor = 'not-allowed';
+                }
                 
                 const input = document.createElement('input');
                 input.type = 'checkbox';
@@ -2750,6 +2766,7 @@
                 input.checked = layerInfo.visible;
                 input.setAttribute('role', 'switch');
                 input.setAttribute('aria-label', `Toggle ${layerInfo.name} layer`);
+                input.disabled = unavailable;
                 
                 // Create info icon button
                 const infoBtn = document.createElement('button');
@@ -2782,6 +2799,13 @@
                     label.appendChild(infoBtn);
                 }
                 container.appendChild(label);
+                
+                if (unavailable) {
+                    const note = document.createElement('div');
+                    note.style.cssText = 'font-size: 0.85rem; color: #666; margin-top: -0.25rem; line-height: 1.4;';
+                    note.textContent = layerInfo.unavailableMessage;
+                    container.appendChild(note);
+                }
             });
             
             // Show the toggles, hint, and separator line
@@ -3024,7 +3048,7 @@
                 } catch (error) {
                     console.error('Error toggling walking dataset layer:', error);
                 }
-            } else if (layerId === 'supplemental-lighting' && mapState.supplementalLightingLayer) {
+            } else if (layerId === 'supplemental-lighting' && mapState.supplementalLightingLayer && mapState.supplementalLightingLayer.layer) {
                 const layerObj = mapState.supplementalLightingLayer;
                 console.log('Supplemental lighting layer found, toggling visibility:', visible);
                 try {
