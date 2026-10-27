@@ -1,9 +1,12 @@
         // Initialize Proj4 for coordinate transformation
         let toWGS84 = null;
+        let fromEPSG2770 = null;
         
         if (typeof proj4 !== 'undefined') {
             proj4.defs("EPSG:27700", "+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.060,0.1502,0.2470,0.8421,-20.4894 +units=m +no_defs");
             toWGS84 = proj4("EPSG:27700", "EPSG:4326");
+            proj4.defs("EPSG:2770", "+proj=lcc +lat_0=33.5 +lon_0=-118 +lat_1=35.4666666666667 +lat_2=34.0333333333333 +x_0=2000000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+            fromEPSG2770 = proj4("EPSG:2770", "EPSG:4326");
             console.log('Proj4 initialized for EPSG:27700 -> EPSG:4326 transformation');
         } else {
             console.warn('Proj4 not available');
@@ -2276,14 +2279,14 @@
                         
                         if (lightingData.features && lightingData.features.length > 0) {
                             // File covers the whole authority: keep this park's lights only.
-                            // Geometry CRS is unreliable, so use the original EPSG:27700 coordinates.
+                            // Geometry was written in EPSG:2770 (mislabelled 27700), so reproject it back to WGS84.
                             lightingData.features.forEach(feature => {
                                 const props = feature.properties || {};
-                                if (props.park_offical_id !== parkId || !toWGS84) return;
-                                const x = Number(props.orig_x);
-                                const y = Number(props.orig_y);
-                                if (!isFinite(x) || !isFinite(y)) return;
-                                const [lng, lat] = toWGS84.forward([x, y]);
+                                if (props.park_offical_id !== parkId || !fromEPSG2770) return;
+                                const c = feature.geometry && feature.geometry.coordinates;
+                                if (!c || !isFinite(c[0]) || !isFinite(c[1])) return;
+                                const [lng, lat] = fromEPSG2770.forward([Number(c[0]), Number(c[1])]);
+                                if (!isFinite(lat) || !isFinite(lng)) return;
                                 const circle = L.circleMarker([lat, lng], {
                                     radius: 4,
                                     fillColor: '#FFB300',
