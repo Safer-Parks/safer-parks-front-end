@@ -249,24 +249,6 @@
             }
         });
         
-        // Street Lamps regional toggle
-        const streetLampsToggle = document.getElementById('streetLampsToggle');
-        let streetLampsVisible = false;
-        
-        streetLampsToggle.addEventListener('change', function() {
-            streetLampsVisible = this.checked;
-            
-            if (streetLampsVisible && mapState.streetLampsLayer) {
-                mapState.streetLampsLayer.visible = true;
-                mapState.streetLampsLayer.layer.addTo(map);
-                updateLegend();
-            } else if (mapState.streetLampsLayer && mapState.streetLampsLayer.layer) {
-                mapState.streetLampsLayer.visible = false;
-                map.removeLayer(mapState.streetLampsLayer.layer);
-                updateLegend();
-            }
-        });
-        
         // Pocket Parks regional toggle
         const pocketParksToggle = document.getElementById('pocketParksToggle');
         let pocketParksVisible = false;
@@ -302,7 +284,6 @@
             foliageTallLayer: null,
             nachLayer: null,
             cyclingNetworkLayer: null,
-            streetLampsLayer: null,
             pocketParksLayer: null,
             featuresInParksLayer: null,
             featuresNearParksLayer: null,
@@ -555,12 +536,9 @@
             pocketParksVisible = false;
             cyclingNetworkToggle.checked = false;
             cyclingNetworkVisible = false;
-            streetLampsToggle.checked = false;
-            streetLampsVisible = false;
             
             await loadRegionalPocketParks();
             await loadRegionalCyclingNetwork();
-            await loadRegionalStreetLamps();
         });
         
         // Handle authority selection
@@ -1763,91 +1741,6 @@
             }
         }
         
-        // Load Street Lamps dataset
-        // Load Regional Street Lamps for all authorities
-        async function loadRegionalStreetLamps() {
-            try {
-                // Remove existing street lamps layer if present
-                if (mapState.streetLampsLayer && mapState.streetLampsLayer.layer) {
-                    map.removeLayer(mapState.streetLampsLayer.layer);
-                }
-                
-                // Create feature group for all street lamps
-                const lampsGroup = L.featureGroup();
-                let totalLamps = 0;
-                
-                // Load street lamps for each authority
-                for (const authority of mapState.authorities) {
-                    try {
-                        const authPath = getAuthorityPath(authority.id);
-                        const authName = authority.name;
-                        const streetLampsFilename = `${authName}_street_lamps.geojson`;
-                        
-                        const response = await fetch(`${authPath}${streetLampsFilename}`);
-                        if (!response.ok) {
-                            console.log(`Street lamps file not found for ${authName}`);
-                            continue;
-                        }
-                        
-                        const lampsData = await response.json();
-                        
-                        if (!lampsData.features || lampsData.features.length === 0) {
-                            console.log(`No street lamps data for ${authName}`);
-                            continue;
-                        }
-                        
-                        lampsData.features.forEach(feature => {
-                            if (feature.geometry.type === 'Point') {
-                                const [lng, lat] = feature.geometry.coordinates;
-                                
-                                // Create CircleMarker for efficient rendering
-                                const marker = L.circleMarker([lat, lng], {
-                                    radius: 6,
-                                    color: '#FFD700',
-                                    weight: 2,
-                                    opacity: 0.9,
-                                    fill: true,
-                                    fillColor: '#FFD700',
-                                    fillOpacity: 0.8,
-                                    className: 'street-lamp-marker'
-                                });
-                                
-                                // Add popup with lamp info
-                                const popupContent = `<strong>Street Lamp</strong><br/>` +
-                                    `ID: ${escapeHtml(feature.properties.osmid || 'N/A')}<br/>` +
-                                    `Source: ${escapeHtml(feature.properties.source || 'OSM')}`;
-                                marker.bindPopup(popupContent);
-                                
-                                // Add tooltip
-                                marker.bindTooltip('Street Lamp', { 
-                                    permanent: false, 
-                                    direction: 'top',
-                                    className: 'street-lamp-tooltip'
-                                });
-                                
-                                lampsGroup.addLayer(marker);
-                                totalLamps++;
-                            }
-                        });
-                    } catch (error) {
-                        console.error(`Error loading street lamps for ${authority.name}:`, error);
-                    }
-                }
-                
-                // Store layer info for toggling
-                mapState.streetLampsLayer = {
-                    id: 'street-lamps',
-                    name: 'Street Lamps',
-                    layer: lampsGroup,
-                    visible: false
-                };
-                
-                console.log(`Loaded regional street lamps: ${totalLamps} lamps across all authorities`);
-            } catch (error) {
-                console.error('Error in loadRegionalStreetLamps:', error);
-            }
-        }
-        
         // Load Pocket Parks dataset
         async function loadRegionalPocketParks() {
             try {
@@ -2339,7 +2232,7 @@
             }
         }
         
-        // Load Supplemental Lighting dataset for selected park (both buffer and points)
+        // Load Supplemental Lighting dataset for selected park (points)
         async function loadSupplementalLighting(park) {
             try {
                 console.log(`loadSupplementalLighting called for park:`, park);
@@ -2363,48 +2256,14 @@
                 
                 console.log(`Using park ID: ${parkId}`);
                 
-                // Try to load both buffer and lighting files
-                const bufferFilename = `lighting_supplemented/${parkId}_lighting_buffer.geojson`;
-                const lightingFilename = `lighting_supplemented/${parkId}_lighting.geojson`;
+                // Load the authority lighting file
+                const lightingFilename = `street_lights_200m/${mapState.currentAuthority.name}_street_lights_200m.geojson`;
                 
-                console.log(`Trying to load: ${authPath}${bufferFilename}`);
                 console.log(`Trying to load: ${authPath}${lightingFilename}`);
                 
                 const lightingGroup = L.featureGroup();
                 let filesLoaded = 0;
-                
-                // Load buffer polygon
-                try {
-                    const bufferResponse = await fetch(`${authPath}${bufferFilename}`);
-                    if (bufferResponse.ok) {
-                        const bufferData = await bufferResponse.json();
-                        console.log(`Buffer loaded:`, bufferData);
-                        
-                        if (bufferData.features && bufferData.features.length > 0) {
-                            bufferData.features.forEach(feature => {
-                                if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
-                                    const polygon = L.geoJSON(feature, {
-                                        style: {
-                                            color: '#FFB300',
-                                            weight: 2,
-                                            opacity: 0.3,
-                                            fillOpacity: 0.1,
-                                            fillColor: '#FFB300'
-                                        }
-                                    });
-                                    
-                                    polygon.bindPopup('<strong>200m Buffer Zone</strong>');
-                                    lightingGroup.addLayer(polygon);
-                                    filesLoaded++;
-                                }
-                            });
-                        }
-                    } else {
-                        console.log(`Buffer not found (${bufferResponse.status}): ${authPath}${bufferFilename}`);
-                    }
-                } catch (error) {
-                    console.log(`Error loading buffer: ${error.message}`);
-                }
+                let lightsAdded = 0;
                 
                 // Load lighting points
                 try {
@@ -2414,24 +2273,28 @@
                         console.log(`Lighting data loaded:`, lightingData);
                         
                         if (lightingData.features && lightingData.features.length > 0) {
+                            // File covers the whole authority: keep this park's lights only.
+                            // Geometry CRS is unreliable, so use the original EPSG:27700 coordinates.
                             lightingData.features.forEach(feature => {
-                                if (feature.geometry.type === 'Point') {
-                                    const coords = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
-                                    
-                                    const circle = L.circleMarker(coords, {
-                                        radius: 4,
-                                        fillColor: '#FFB300',
-                                        color: '#FF8C00',
-                                        weight: 1.5,
-                                        opacity: 0.8,
-                                        fillOpacity: 0.7
-                                    });
-                                    
-                                    circle.bindPopup('<strong>Street Light</strong>');
-                                    lightingGroup.addLayer(circle);
-                                }
+                                const props = feature.properties || {};
+                                if (props.park_offical_id !== parkId || !toWGS84) return;
+                                const x = Number(props.orig_x);
+                                const y = Number(props.orig_y);
+                                if (!isFinite(x) || !isFinite(y)) return;
+                                const [lng, lat] = toWGS84.forward([x, y]);
+                                const circle = L.circleMarker([lat, lng], {
+                                    radius: 4,
+                                    fillColor: '#FFB300',
+                                    color: '#FF8C00',
+                                    weight: 1.5,
+                                    opacity: 0.8,
+                                    fillOpacity: 0.7
+                                });
+                                circle.bindPopup('<strong>Street Light</strong>');
+                                lightingGroup.addLayer(circle);
+                                lightsAdded++;
                             });
-                            filesLoaded++;
+                            if (lightsAdded > 0) filesLoaded++;
                         }
                     } else {
                         console.log(`Lighting not found (${lightingResponse.status}): ${authPath}${lightingFilename}`);
@@ -3310,14 +3173,6 @@
                 });
             }
             
-            if (mapState.streetLampsLayer && mapState.streetLampsLayer.visible) {
-                visibleLayers.push({
-                    id: 'street-lamps',
-                    name: 'Street Lighting',
-                    type: 'street-lamps'
-                });
-            }
-
             if (mapState.featuresInAndNearParksLayer && mapState.featuresInAndNearParksLayer.visible) {
                 visibleLayers.push({
                     id: 'features-in-and-near-parks',
@@ -3678,31 +3533,12 @@
                     const lightingGroup = document.createElement('div');
                     lightingGroup.style.marginBottom = '0.75rem';
                     
-                    // Buffer zone (polygon)
-                    const bufferDiv = document.createElement('div');
-                    bufferDiv.style.display = 'flex';
-                    bufferDiv.style.alignItems = 'center';
-                    bufferDiv.style.gap = '0.5rem';
-                    bufferDiv.style.marginBottom = '0.5rem';
-                    
-                    const bufferBox = document.createElement('div');
-                    bufferBox.style.width = '24px';
-                    bufferBox.style.height = '16px';
-                    bufferBox.style.backgroundColor = '#FFB300';
-                    bufferBox.style.opacity = '0.1';
-                    bufferBox.style.border = '1px solid #FFB300';
-                    bufferBox.style.borderRadius = '2px';
-                    bufferBox.style.flexShrink = '0';
-                    
-                    bufferDiv.appendChild(bufferBox);
-                    bufferDiv.appendChild(document.createTextNode('200m Buffer Zone'));
-                    lightingGroup.appendChild(bufferDiv);
-                    
                     // Points (circle markers)
                     const pointsDiv = document.createElement('div');
                     pointsDiv.style.display = 'flex';
                     pointsDiv.style.alignItems = 'center';
                     pointsDiv.style.gap = '0.5rem';
+                    pointsDiv.style.fontSize = '0.9rem';
                     
                     const circle = document.createElement('div');
                     circle.style.width = '12px';
@@ -3713,7 +3549,7 @@
                     circle.style.flexShrink = '0';
                     
                     pointsDiv.appendChild(circle);
-                    pointsDiv.appendChild(document.createTextNode('Street Lights'));
+                    pointsDiv.appendChild(document.createTextNode('Street Lights (within 200m)'));
                     lightingGroup.appendChild(pointsDiv);
                     
                     legendItems.appendChild(lightingGroup);
@@ -3740,30 +3576,6 @@
                     
                     cyclingGroup.appendChild(cyclingMarker);
                     legendItems.appendChild(cyclingGroup);
-                    return;
-                } else if (layer.type === 'street-lamps') {
-                    // Create street lamps legend
-                    const lampsGroup = document.createElement('div');
-                    lampsGroup.style.marginBottom = '0.75rem';
-                    
-                    // Create marker
-                    const lampsMarker = document.createElement('div');
-                    lampsMarker.style.display = 'flex';
-                    lampsMarker.style.alignItems = 'center';
-                    lampsMarker.style.gap = '0.5rem';
-                    
-                    const circle = document.createElement('div');
-                    circle.style.width = '12px';
-                    circle.style.height = '12px';
-                    circle.style.backgroundColor = '#FFD700';
-                    circle.style.border = '2px solid #FFD700';
-                    circle.style.borderRadius = '50%';
-                    
-                    lampsMarker.appendChild(circle);
-                    lampsMarker.appendChild(document.createTextNode('Street Lighting (OSM)'));
-                    
-                    lampsGroup.appendChild(lampsMarker);
-                    legendItems.appendChild(lampsGroup);
                     return;
                 } else if (layer.type === 'features-in-and-near-parks') {
                     const featuresGroup = document.createElement('div');

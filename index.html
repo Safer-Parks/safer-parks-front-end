@@ -111,14 +111,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 </label>
                 
                 <label class="toggle-label">
-                    <input type="checkbox" id="streetLampsToggle" role="switch" aria-label="Toggle street lamps on or off"/>
-                    <span>Street Lighting (authority level, from OSM)</span>
-                    <button type="button" class="info-icon-btn" onclick="openModal('modal-streetLighting')" aria-label="Information about Street Lighting">
-                        <img src="css/icon.svg" alt="Info" style="width: 100%; height: 100%;">
-                    </button>
-                </label>
-                
-                <label class="toggle-label">
                     <input type="checkbox" id="pocketParksToggle" role="switch" aria-label="Toggle pocket parks on or off"/>
                     <span>Pocket Parks & Small Greenspaces</span>
                     <button type="button" class="info-icon-btn" onclick="openModal('modal-pocketParks')" aria-label="Information about Pocket Parks">
@@ -276,42 +268,6 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <section id="where-is-the-data-from-2" class="level3">
                 <h3 class="anchored" data-anchor-id="where-is-the-data-from-2">Where is the data from?</h3>
                 <p>This layer uses OpenStreetMap data downloaded via Geofabrik and filtered to extract active travel infrastructure across England and Wales. The data is split into two layers: cycling (cycleways, cycle lanes, shared paths, bridleways, and tracks) and walking (footways, pedestrian areas, shared paths, bridleways, and tracks). Shared paths, bridleways, and tracks appear in both layers as they serve both cyclists and pedestrians.</p>
-                </section>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modal-streetLighting">
-        <div class="modal-box">
-            <button class="modal-close-btn" aria-label="Close modal">&times;</button>
-            <h3 class="modal-title">Street Lighting (Authority Level)</h3>
-            <div class="modal-content" id="content-streetLighting">
-                Street lighting data from OpenStreetMap at the authority/regional level. Note: this lighting data is very sparse or may not be available for your area.
-                <hr>
-
-                <section id="what-is-this-layer-9" class="level3">
-                <h3 class="anchored" data-anchor-id="what-is-this-layer-9">What is this layer?</h3>
-                <p>Locations of street lighting within and around parks. The layer is displayed as a heatmap.</p>
-                </section>
-                <section id="how-to-use-this-information-9" class="level3">
-                <h3 class="anchored" data-anchor-id="how-to-use-this-information-9">How to use this information</h3>
-                <p>Lighting plays a key role in how safe parks feel, particularly after dark, including during early mornings and afternoons in Autumn and Winter. Parks often form part of active-travel routes, but many women and girls feel unsafe using them in low-light conditions.</p>
-                <p>Use this layer to identify areas that are unlit or poorly lit within and around your chosen park. Consider:</p>
-                <ul>
-                <li><p><strong>Unlit paths:</strong> Which paths lack lighting, particularly those that are well-used or likely to attract higher footfall? (See <a href="https://www.greenflagaward.org/media/j0mbuudi/250908_safer-parks_pcpi_single.pdf#page=32">Lighting: The Safer Parks guidance</a>). These routes may be priority areas for improvement.</p></li>
-                <li><p><strong>Lighting at access and exit points:</strong> Are entrances and exit points adequately lit? Poor lighting at these points can deter use and reduce perceptions of safety (See <a href="https://www.greenflagaward.org/media/j0mbuudi/250908_safer-parks_pcpi_single.pdf#page=32">Lighting: The Safer Parks guidance</a>).</p></li>
-                <li><p><strong>Targeting improvements</strong>: Where should lighting interventions be prioritised? Combining this layer with Visibility Analysis can help identify locations where lighting and sightlines together present higher risk.</p></li>
-                <li><p><strong>Supporting safe use after dark:</strong> Are areas likely to be used in low-light conditions supported by appropriate management measures? Enhancing lighting may require complementary approaches such as patrols, CCTV, or updated park management plans, including decisions about opening and closing times.</p></li>
-                </ul>
-                <p><strong>Note:</strong> Lighting should be applied selectively and strategically. Decisions should balance likely use, safety needs, active travel, and ecological impacts. Lower-level, evenly distributed lighting can improve comfort and visibility while avoiding excessive brightness glare, and deep shadows.</p>
-                </section>
-                <section id="what-layers-could-be-combined-7" class="level3">
-                <h3 class="anchored" data-anchor-id="what-layers-could-be-combined-7">What layers could be combined?</h3>
-                <p>For deeper insight, use alongside the <em>Visibility Analysis</em>, <em>Access and Exit points</em>, and <em>Predicted Route Popularity</em> layers.</p>
-                </section>
-                <section id="where-is-the-data-from-9" class="level3">
-                <h3 class="anchored" data-anchor-id="where-is-the-data-from-9">Where is the data from?</h3>
-                <p>This layer uses data from Open Street Maps. Street lighting data may not capture all assets. Verify with local authority records and on-the-ground knowledge, and ensure lights are regularly checked sand maintained.</p>
                 </section>
             </div>
         </div>

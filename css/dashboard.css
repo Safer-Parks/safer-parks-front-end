@@ -444,20 +444,6 @@ aside#legendPanel {
     border-top-color: rgba(255, 107, 53, 0.95) !important;
 }
 
-/* Street lamp tooltip styling */
-.street-lamp-tooltip {
-    background: rgba(255, 215, 0, 0.95) !important;
-    color: #333 !important;
-    border-radius: 4px;
-    padding: 8px 12px !important;
-    font-size: 0.85rem;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.street-lamp-tooltip::before {
-    border-top-color: rgba(255, 215, 0, 0.95) !important;
-}
-
 /* Pocket parks tooltip styling */
 .pocket-park-tooltip {
     background: rgba(255, 175, 145, 0.95) !important;
