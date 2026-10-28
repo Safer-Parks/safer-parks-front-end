@@ -2295,7 +2295,11 @@
                                     opacity: 0.8,
                                     fillOpacity: 0.7
                                 });
-                                circle.bindPopup('<strong>Street Light</strong>');
+                                const oglText = props.OGL_text != null ? String(props.OGL_text).trim() : '';
+                                circle.bindPopup(oglText
+                                    ? `<strong>Street Light</strong><br/>${escapeHtml(oglText)}`
+                                    : '<strong>Street Light</strong>');
+                                circle.bindTooltip(oglText ? escapeHtml(oglText) : 'Street Light', { sticky: true });
                                 lightingGroup.addLayer(circle);
                                 lightsAdded++;
                             });
