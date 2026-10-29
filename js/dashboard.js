@@ -121,11 +121,12 @@
                 <p>Explore open data for parks across England and Wales.</p>
                 <p><strong>How to use:</strong></p>
                 <ul>
-                    <li>Select a region and authority from the left panel</li>
-                    <li>Toggle data layers in the legend to explore different insights</li>
-                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the "Capture Screenshot" button.
+                    <li>Select a region and authority from the left panel, or by clicking on the map.</li>
+                    <li>Toggle data layers in the legend to explore different insights; the most recently toggled layer will display on top.</li>
+                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the <i>Capture Screenshot</i> button in the navagation bar above.
                     </br>
-                    <b>Note:</b> the required permission pop-up may not work with your browser in full-screen mode.</li>
+                    <b>Note:</b> the required permission pop-up may not work with your browser in full-screen mode; please exit full-screen mode before clicking <i>Capture Screenshot</i>.</li>
+                    <li>Large datasets may take a few seconds to load, depending on your internet speed. If the dataset does not seem to have loaded, or has only loaded partially, click the <i>Load Park</i> button again.
                 </ul>
                 <p>See our <i>Layer Guide</i> linked in the navigation bar above, or click on the green info icon next to each entry in the legend.
                 You can re-open this modal by clicking <i>Quick Info</i> in the navigation bar above.</p>
