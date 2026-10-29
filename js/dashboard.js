@@ -515,6 +515,11 @@
                 document.getElementById('parks').disabled = true;
                 document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
                 updateExploreTitle();
+            
+            // Drop placeholders left by a previous park's unavailable catchment
+            ['nachLayer', 'walkingLayer', 'cyclingLayer'].forEach(key => {
+                if (mapState[key] && mapState[key].unavailableMessage) mapState[key] = null;
+            });
                 return;
             }
             
@@ -1125,6 +1130,27 @@
             
             // Load supplemental lighting dataset and wait for it to complete
             await loadSupplementalLighting(selectedPark);
+            
+            // These layers depend on the demographics catchment; grey them out if it is misplaced
+            if (mapState.demographicsLayer && mapState.demographicsLayer.unavailableMessage) {
+                const dependentLayers = [
+                    ['nachLayer', 'nach-network', 'Predicted Route Popularity (NACH)'],
+                    ['walkingLayer', 'park-walking', 'Walking Routes'],
+                    ['cyclingLayer', 'park-cycling', 'Cycling Routes']
+                ];
+                dependentLayers.forEach(([key, id, name]) => {
+                    if (mapState[key] && mapState[key].layer && map.hasLayer(mapState[key].layer)) {
+                        map.removeLayer(mapState[key].layer);
+                    }
+                    mapState[key] = {
+                        id,
+                        name,
+                        layer: null,
+                        visible: false,
+                        unavailableMessage: mapState.demographicsLayer.unavailableMessage
+                    };
+                });
+            }
             
             // Show and populate layer toggles for both layers
             const layerToggles = [mapState.parkBoundaryLayer, mapState.otherParksLayer];
@@ -2510,13 +2536,58 @@
         }
         
         // Load Demographics data for selected authority
+        // Outer rings of a Polygon/MultiPolygon geometry
+        function getOuterRings(geometry) {
+            if (!geometry) return [];
+            if (geometry.type === 'Polygon') return [geometry.coordinates[0]];
+            if (geometry.type === 'MultiPolygon') return geometry.coordinates.map(poly => poly[0]);
+            return [];
+        }
+        
+        function pointInRing(pt, ring) {
+            let inside = false;
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const [xi, yi] = ring[i], [xj, yj] = ring[j];
+                if ((yi > pt[1]) !== (yj > pt[1]) &&
+                    pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) {
+                    inside = !inside;
+                }
+            }
+            return inside;
+        }
+        
+        function segmentsIntersect(p1, p2, p3, p4) {
+            const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+            const d1 = cross(p3, p4, p1), d2 = cross(p3, p4, p2);
+            const d3 = cross(p1, p2, p3), d4 = cross(p1, p2, p4);
+            return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
+        }
+        
+        function ringsOverlap(a, b) {
+            if (a.length < 3 || b.length < 3) return false;
+            if (pointInRing(a[0], b) || pointInRing(b[0], a)) return true;
+            for (let i = 0; i < a.length - 1; i++) {
+                for (let j = 0; j < b.length - 1; j++) {
+                    if (segmentsIntersect(a[i], a[i + 1], b[j], b[j + 1])) return true;
+                }
+            }
+            return false;
+        }
+        
+        // True if two geometries in the same CRS share any area (outer rings only)
+        function geometriesOverlap(geomA, geomB) {
+            const ringsA = getOuterRings(geomA);
+            const ringsB = getOuterRings(geomB);
+            return ringsA.some(a => ringsB.some(b => ringsOverlap(a, b)));
+        }
+        
         async function loadDemographicsData(park) {
             try {
                 // Remove existing demographics layer
                 if (mapState.demographicsLayer && mapState.demographicsLayer.layer) {
                     map.removeLayer(mapState.demographicsLayer.layer);
-                    mapState.demographicsLayer = null;
                 }
+                mapState.demographicsLayer = null;
                 
                 const authPath = getAuthorityPath(mapState.currentAuthority.id);
                 const authName = mapState.currentAuthority.name;
@@ -2542,12 +2613,29 @@
                     }
                     
                     // Filter features to only those matching this park's ID
-                    const parkDemographics = demographicsData.features.filter(feature => 
+                    const matchedDemographics = demographicsData.features.filter(feature => 
                         feature.properties.park_offical_id === park.id
                     );
                     
-                    if (parkDemographics.length === 0) {
+                    if (matchedDemographics.length === 0) {
                         console.log(`No demographics data found for park: ${park.name}`);
+                        return;
+                    }
+                    
+                    // Catchments incorrectly provisioned away from the park are not shown
+                    const parkDemographics = matchedDemographics.filter(feature =>
+                        geometriesOverlap(feature.geometry, park.sourceGeometry)
+                    );
+                    
+                    if (parkDemographics.length === 0) {
+                        console.log(`Demographics catchment does not overlap park: ${park.name}`);
+                        mapState.demographicsLayer = {
+                            id: 'demographics',
+                            name: 'Demographics Data',
+                            layer: null,
+                            visible: false,
+                            unavailableMessage: 'Data not yet available for this park, coming soon'
+                        };
                         return;
                     }
                     
