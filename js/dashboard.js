@@ -111,7 +111,7 @@
             
             // Unique ID for this announcement (change to show a different announcement)
             // Users see each unique ID only once (tracked via localStorage)
-            id: 'announcement-20251020',
+            id: 'announcement-20261029',
             
             // Modal title
             title: 'Welcome to the Safer Parks Dashboard',
@@ -123,14 +123,31 @@
                 <ul>
                     <li>Select a region and authority from the left panel</li>
                     <li>Toggle data layers in the legend to explore different insights</li>
-                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the "Capture Screenshot" button. Note: the required permission pop-up may not work with your browser in full-screen mode.</li>
+                    <li>To save an image of the map, select the layers you wish to display, and minimise the left sidebar using the +/- symbol on the right corner, then hit the "Capture Screenshot" button.
+                    </br>
+                    <b>Note:</b> the required permission pop-up may not work with your browser in full-screen mode.</li>
                 </ul>
-                <p>See our Layer Guide linked in the navigation bar above, or click on the green info icon next to each entry in the legend.</p>
+                <p>See our <i>Layer Guide</i> linked in the navigation bar above, or click on the green info icon next to each entry in the legend.
+                You can re-open this modal by clicking <i>Quick Info</i> in the navigation bar above.</p>
             `
         };
         
+        // Populate and open the announcement modal (also used by the navbar Quick Info button)
+        function openAnnouncementModal() {
+            const titleEl = document.getElementById('announcementTitle');
+            const contentEl = document.getElementById('announcementContent');
+            if (titleEl) titleEl.textContent = announcementConfig.title;
+            if (contentEl) contentEl.innerHTML = announcementConfig.content;
+            openModal('modal-announcement');
+        }
+
         // Initialize announcement modal
         function initAnnouncementModal() {
+            const quickInfoBtn = document.getElementById('quickInfoBtn');
+            if (quickInfoBtn && !announcementConfig.enabled) {
+                quickInfoBtn.parentElement.style.display = 'none';
+            }
+
             if (!announcementConfig.enabled) {
                 return; // Announcement is disabled
             }
@@ -141,14 +158,7 @@
             
             if (!hasDismissed) {
                 // First time seeing this announcement, populate and show it
-                const titleEl = document.getElementById('announcementTitle');
-                const contentEl = document.getElementById('announcementContent');
-                
-                if (titleEl) titleEl.textContent = announcementConfig.title;
-                if (contentEl) contentEl.innerHTML = announcementConfig.content;
-                
-                // Open the announcement modal
-                openModal('modal-announcement');
+                openAnnouncementModal();
                 
                 // Mark this announcement as dismissed when closed
                 const announceModal = document.getElementById('modal-announcement');
