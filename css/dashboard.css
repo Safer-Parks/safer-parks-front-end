@@ -137,6 +137,7 @@
 @font-face {
     font-family: 'MrDodo';
     src: url('MrDodo-Regular.otf') format('opentype');
+    font-display: swap;
 }
 
 /* Additional styles for Test-Region implementation */

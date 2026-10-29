@@ -190,6 +190,20 @@
         const REGION_OVERVIEW_MAX_ZOOM = 8;
         const REGION_DETAIL_MAX_ZOOM = 19;
         
+        // Cache of parsed GeoJSON per URL so switching parks in an authority doesn't re-download its files
+        const jsonCache = new Map();
+        function cachedFetch(url) {
+            if (!jsonCache.has(url)) {
+                const request = fetch(url).then(async response => {
+                    const data = response.ok ? await response.json() : null;
+                    return { ok: response.ok, status: response.status, json: async () => data };
+                });
+                request.catch(() => jsonCache.delete(url));
+                jsonCache.set(url, request);
+            }
+            return jsonCache.get(url);
+        }
+        
         const map = L.map('map', {
             zoomControl: false,
             maxZoom: REGION_OVERVIEW_MAX_ZOOM
@@ -515,11 +529,6 @@
                 document.getElementById('parks').disabled = true;
                 document.getElementById('parks').innerHTML = '<option value="">Select an authority first</option>';
                 updateExploreTitle();
-            
-            // Drop placeholders left by a previous park's unavailable catchment
-            ['nachLayer', 'walkingLayer', 'cyclingLayer'].forEach(key => {
-                if (mapState[key] && mapState[key].unavailableMessage) mapState[key] = null;
-            });
                 return;
             }
             
@@ -796,7 +805,7 @@
                     const benchChecks = parks.map(async (park) => {
                         try {
                             const benchFilename = `bench_dataset/${park.id}.geojson`;
-                            const response = await fetch(`${authPath}${benchFilename}`);
+                            const response = await fetch(`${authPath}${benchFilename}`, { method: 'HEAD' });
                             if (response.ok) {
                                 parksWithBenches.add(park.id);
                             }
@@ -1025,6 +1034,11 @@
             }
             
             updateExploreTitle();
+            
+            // Drop placeholders left by a previous park's unavailable catchment
+            ['nachLayer', 'walkingLayer', 'cyclingLayer'].forEach(key => {
+                if (mapState[key] && mapState[key].unavailableMessage) mapState[key] = null;
+            });
             const selectedPark = mapState.sortedParks[selectedIndex];
             
             if (!selectedPark || !selectedPark.geometry) {
@@ -1101,35 +1115,20 @@
             navParkName.textContent = 'Park: ' + selectedPark.name;
             navParkName.style.display = 'inline';
             
-            // Load park entrances and wait for it to complete
-            await loadParkEntrances(selectedPark);
-            
-            // Load demographics for this park
-            await loadDemographicsData(selectedPark);
-            
-            // Load visibility hexagons and wait for it to complete
-            await loadVisibilityHexagons(selectedPark);
-            
-            // Load foliage hexagons and wait for it to complete
-            await loadFoliageHexagons(selectedPark);
-            
-            // Load NACH network and wait for it to complete
-            await loadNACHNetwork(selectedPark);
-            
-            // Load toilet dataset and wait for it to complete
-            await loadToiletDataset(selectedPark);
-            
-            // Load benches dataset and wait for it to complete
-            await loadBenchesDataset(selectedPark);
-            
-            // Load cycling dataset and wait for it to complete
-            await loadCyclingDataset(selectedPark);
-            
-            // Load walking dataset and wait for it to complete
-            await loadWalkingDataset(selectedPark);
-            
-            // Load supplemental lighting dataset and wait for it to complete
-            await loadSupplementalLighting(selectedPark);
+            // Park datasets are independent, so load them concurrently
+            const results = await Promise.allSettled([
+                loadParkEntrances(selectedPark),
+                loadDemographicsData(selectedPark),
+                loadVisibilityHexagons(selectedPark),
+                loadFoliageHexagons(selectedPark),
+                loadNACHNetwork(selectedPark),
+                loadToiletDataset(selectedPark),
+                loadBenchesDataset(selectedPark),
+                loadCyclingDataset(selectedPark),
+                loadWalkingDataset(selectedPark),
+                loadSupplementalLighting(selectedPark)
+            ]);
+            results.forEach(r => { if (r.status === 'rejected') console.error('Park dataset failed to load:', r.reason); });
             
             // These layers depend on the demographics catchment; grey them out if it is misplaced
             if (mapState.demographicsLayer && mapState.demographicsLayer.unavailableMessage) {
@@ -1215,7 +1214,7 @@
                 const entrancesFilename = `${authName}_park_entrances.geojson`;
                 
                 try {
-                    const response = await fetch(`${authPath}${entrancesFilename}`);
+                    const response = await cachedFetch(`${authPath}${entrancesFilename}`);
                     if (!response.ok) {
                         console.log(`Entrances file not found: ${entrancesFilename}`);
                         return;
@@ -1361,7 +1360,7 @@
                 const visibilityFilename = `${authName}_pp_or_g_cmb/${park.newParkId}_visibility.geojson`;
                 
                 try {
-                    const response = await fetch(`${authPath}${visibilityFilename}`);
+                    const response = await cachedFetch(`${authPath}${visibilityFilename}`);
                     if (!response.ok) {
                         console.log(`Visibility file not found: ${visibilityFilename}`);
                         return;
@@ -1463,7 +1462,7 @@
                 const foliageFilename = `${authName}_pp_or_g_cmb/${park.newParkId}_foliage.geojson`;
                 
                 try {
-                    const response = await fetch(`${authPath}${foliageFilename}`);
+                    const response = await cachedFetch(`${authPath}${foliageFilename}`);
                     if (!response.ok) {
                         console.log(`Foliage file not found: ${foliageFilename}`);
                         return;
@@ -1672,7 +1671,7 @@
                 const nachFilename = `NACH_dataset/${park.id}_NACH.geojson`;
                 
                 try {
-                    const response = await fetch(`${authPath}${nachFilename}`);
+                    const response = await cachedFetch(`${authPath}${nachFilename}`);
                     if (!response.ok) {
                         console.log(`NACH file not found: ${nachFilename} (this is OK - not all areas have NACH data)`);
                         return;
@@ -1998,7 +1997,7 @@
                 console.log(`Attempting to load benches from: ${fullBenchPath}`);
                 
                 try {
-                    const response = await fetch(fullBenchPath);
+                    const response = await cachedFetch(fullBenchPath);
                     console.log(`Bench file fetch response status: ${response.status}`);
                     
                     if (!response.ok) {
@@ -2098,7 +2097,7 @@
                 console.log(`Attempting to load: ${authPath}${cyclingFilename}`);
                 
                 try {
-                    const response = await fetch(`${authPath}${cyclingFilename}`);
+                    const response = await cachedFetch(`${authPath}${cyclingFilename}`);
                     if (!response.ok) {
                         console.log(`Cycling file not found: ${cyclingFilename} (this is OK - not all parks have cycling data)`);
                         return;
@@ -2196,7 +2195,7 @@
                 const walkingFilename = `walking_dataset/${park.id}_walking.geojson`;
                 
                 try {
-                    const response = await fetch(`${authPath}${walkingFilename}`);
+                    const response = await cachedFetch(`${authPath}${walkingFilename}`);
                     if (!response.ok) {
                         console.log(`Walking file not found: ${walkingFilename} (this is OK - not all parks have walking data)`);
                         return;
@@ -2308,7 +2307,7 @@
                 
                 // Load lighting points
                 try {
-                    const lightingResponse = await fetch(`${authPath}${lightingFilename}`);
+                    const lightingResponse = await cachedFetch(`${authPath}${lightingFilename}`);
                     if (lightingResponse.ok) {
                         authorityFileFound = true;
                         const lightingData = await lightingResponse.json();
@@ -2600,7 +2599,7 @@
                 }
                 
                 try {
-                    const response = await fetch(`${demographicsPath}${authName}_15_min.geojson`);
+                    const response = await cachedFetch(`${demographicsPath}${authName}_15_min.geojson`);
                     if (!response.ok) {
                         console.log(`Demographics file not found for authority: ${authName}`);
                         return;
@@ -2760,7 +2759,7 @@
                         const authName = authority.name;
                         const cyclingFilename = `${authName}_national_cycle_network.geojson`;
                         
-                        const response = await fetch(`${authPath}${cyclingFilename}`);
+                        const response = await cachedFetch(`${authPath}${cyclingFilename}`);
                         if (!response.ok) {
                             console.log(`Cycling network file not found for ${authName}`);
                             continue;
