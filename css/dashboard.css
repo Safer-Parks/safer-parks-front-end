@@ -671,3 +671,21 @@ nav li .nav-link-btn {
   width: 100%;
   height: 100%;
 }
+
+/* Facility (toilet/bench) markers: keep Pico from restyling them */
+.leaflet-marker-icon.facility-marker {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin-block: 0;
+  box-shadow: none !important;
+  outline: none !important;
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.facility-marker svg {
+  display: block;
+  pointer-events: none;
+}

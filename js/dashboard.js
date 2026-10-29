@@ -2103,6 +2103,27 @@ async function loadRegionalPocketParks() {
   }
 }
 
+// Small, bordered, semi-transparent circular markers for toilets and benches
+function getFacilitySvg(type, size = 20) {
+  const isToilet = type === "toilet";
+  const fill = isToilet ? "#0069d9" : "#8B6F47";
+  // Toilet: two stick figures (head, torso with arms, two legs); the right one wears a skirt
+  const glyph = isToilet
+    ? '<g fill="#fff"><circle cx="6.6" cy="5.6" r="1.1"/><path d="M5.3 7.2h2.6c.4 0 .7.3.7.7v2.6H7.5v3.4H6.9V10.5h-.6v3.4h-.6V10.5H4.6V7.9c0-.4.3-.7.7-.7z"/><circle cx="13.4" cy="5.6" r="1.1"/><path d="M13.4 7.2c.5 0 .8.3 1 .7l1.1 3.6h-1.2v2.4h-.6v-2.4h-.6v2.4h-.6v-2.4h-1.2l1.1-3.6c.2-.4.5-.7 1-.7z" transform="translate(0 0)"/></g><path d="M10 4.5v11" stroke="#fff" stroke-width=".6" stroke-opacity=".7"/>'
+    : '<path d="M5.5 6.5h9v1.6h-9zM5.5 9h9v1.6h-9zM6 11v2.2M14 11v2.2" stroke="#fff" stroke-width="1.3" fill="none" stroke-linecap="round"/>';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.5" fill="${fill}" fill-opacity="0.8" stroke="#fff" stroke-width="1.5"/><circle cx="10" cy="10" r="9.5" fill="none" stroke="${fill}" stroke-opacity="0.6" stroke-width="0.8"/>${glyph}</svg>`;
+}
+
+function createFacilityIcon(type) {
+  return L.divIcon({
+    html: getFacilitySvg(type),
+    className: `facility-marker facility-marker-${type}`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+  });
+}
+
 // Load Toilet dataset
 async function loadToiletDataset(park) {
   try {
@@ -2142,14 +2163,7 @@ async function loadToiletDataset(park) {
       // Create feature group for toilet markers
       const toiletGroup = L.featureGroup();
 
-      // Create blue square icon
-      const blueSquareIcon = L.icon({
-        iconUrl:
-          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSIyIiBmaWxsPSIjMDA3QkZGIi8+PC9zdmc+",
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -12],
-      });
+      const blueSquareIcon = createFacilityIcon("toilet");
 
       toiletData.features.forEach((feature) => {
         const coords = feature.geometry.coordinates; // GeoJSON: [lng, lat]
@@ -2251,14 +2265,7 @@ async function loadBenchesDataset(park) {
       // Create feature group for bench markers
       const benchGroup = L.featureGroup();
 
-      // Create icon for benches
-      const brownSquareIcon = L.icon({
-        iconUrl:
-          "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSIyIiBmaWxsPSIjOEI2RjQ3Ii8+PC9zdmc+",
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -12],
-      });
+      const brownSquareIcon = createFacilityIcon("bench");
 
       benchData.features.forEach((feature) => {
         const coords = feature.geometry.coordinates; // GeoJSON: [lng, lat]
@@ -3951,11 +3958,9 @@ function updateLegend() {
       toiletMarker.style.alignItems = "center";
       toiletMarker.style.gap = "0.5rem";
 
-      const square = document.createElement("div");
-      square.style.width = "16px";
-      square.style.height = "16px";
-      square.style.backgroundColor = "#007BFF";
-      square.style.borderRadius = "2px";
+      const square = document.createElement("span");
+      square.style.display = "inline-flex";
+      square.innerHTML = getFacilitySvg("toilet", 20);
 
       toiletMarker.appendChild(square);
       toiletMarker.appendChild(document.createTextNode("Toilet Facilities"));
@@ -3974,11 +3979,9 @@ function updateLegend() {
       benchMarker.style.alignItems = "center";
       benchMarker.style.gap = "0.5rem";
 
-      const square = document.createElement("div");
-      square.style.width = "16px";
-      square.style.height = "16px";
-      square.style.backgroundColor = "#8B6F47";
-      // circle.style.borderRadius = '50%';
+      const square = document.createElement("span");
+      square.style.display = "inline-flex";
+      square.innerHTML = getFacilitySvg("bench", 20);
 
       benchMarker.appendChild(square);
       benchMarker.appendChild(
