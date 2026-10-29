@@ -1940,19 +1940,37 @@ async function loadNACHNetwork(park) {
       lines.forEach((l) => nachGroup.addLayer(l));
 
       // Rescale line widths with zoom so lines thicken as the user zooms in
+      // Restyling thousands of segments is expensive, so skip it when the
+      // clamped scale hasn't changed and batch it into the next frame
+      let appliedScale = getNachZoomScale();
+      let pendingFrame = null;
       const updateNachWeights = () => {
+        pendingFrame = null;
         const scale = getNachZoomScale();
+        if (scale === appliedScale) return;
+        appliedScale = scale;
         lines.forEach((l) => {
           const w = l._nachBaseWeight * scale;
           l.setStyle({ weight: w });
           l._nachCasing.setStyle({ weight: w + NACH_CASING_WIDTH });
         });
       };
+      const scheduleNachWeights = () => {
+        if (pendingFrame === null) {
+          pendingFrame = requestAnimationFrame(updateNachWeights);
+        }
+      };
       nachGroup.on("add", () => {
         updateNachWeights();
-        map.on("zoomend", updateNachWeights);
+        map.on("zoomend", scheduleNachWeights);
       });
-      nachGroup.on("remove", () => map.off("zoomend", updateNachWeights));
+      nachGroup.on("remove", () => {
+        map.off("zoomend", scheduleNachWeights);
+        if (pendingFrame !== null) {
+          cancelAnimationFrame(pendingFrame);
+          pendingFrame = null;
+        }
+      });
 
       // Store layer info for toggling (but don't add to map yet - user must enable via toggle)
       mapState.nachLayer = {
