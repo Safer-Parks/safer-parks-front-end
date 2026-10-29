@@ -642,3 +642,32 @@ nav li .nav-link-btn {
   font-size: inherit;
   line-height: inherit;
 }
+
+/* Layout helpers moved from inline styles */
+.nav-push-right {
+  margin-left: auto;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.reset-map-btn {
+  margin-top: 1rem;
+}
+
+.panel-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.info-icon-img {
+  width: 100%;
+  height: 100%;
+}
