@@ -1,0 +1,48 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: The Safer Parks Dashboard
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Maeve
+    family-names: Murphy Quinlan
+  - given-names: Anna
+    family-names: Barker
+  - given-names: Melissa
+    family-names: Barrientos-Trinanes
+  - given-names: Victoria
+    family-names: Houlden
+  - given-names: Francesca
+    family-names: Pontin
+identifiers:
+  - type: doi
+    value: 10.5518/1951
+repository-code: 'https://github.com/Safer-Parks/safer-parks-front-end'
+url: 'https://safer-parks.github.io/'
+abstract: >-
+  Supporting safer, more inclusive parks for women and
+  girls.
+
+
+  A free mapping tool that brings together open data and
+  spatial insights to help practitioners understand the
+  factors that shape safety and inclusion in parks across
+  England and Wales.
+
+
+  Use the dashboard to:
+
+
+  Visualise park safety factors
+
+  Explore spatial data layers
+
+  Make decisions with evidence
+
+  Create safer parks in your area
+version: v0.1.0
+date-released: '2026-11-01'
