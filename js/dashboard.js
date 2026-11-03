@@ -1853,6 +1853,7 @@ async function loadNACHNetwork(park) {
 
     // Load NACH file from NACH_dataset directory
     // Path format: {authorityId}/NACH_dataset/{parkId}_NACH.geojson
+    // Old one: const nachFilename = `NACH_dataset/${park.id}_NACH.geojson`;
     const nachFilename = `NACH_dataset/${park.id}_NACH.geojson`;
 
     try {
