@@ -1852,19 +1852,22 @@ async function loadNACHNetwork(park) {
     }
 
     // Load NACH file from NACH_dataset directory
-    // Path format: {authorityId}/NACH_dataset/{parkId}_NACH.geojson
-    const nachFilename = `NACH_dataset/${park.id}_NACH.geojson`;
+    // Path format: {authorityId}/NACH_dataset_v2/{parkId}_NACH_800m.geojson
+    const nachFilename = `NACH_dataset_v2/${park.id}_NACH_800m.geojson`;
+    const fullNachPath = `${authPath}${nachFilename}`;
 
     try {
-      const response = await cachedFetch(`${authPath}${nachFilename}`);
+      console.log(`Loading NACH data from: ${fullNachPath}`);
+      const response = await cachedFetch(fullNachPath);
       if (!response.ok) {
         console.log(
-          `NACH file not found: ${nachFilename} (this is OK - not all areas have NACH data)`,
+          `NACH file not found: ${nachFilename} (status: ${response.status}) (this is OK - not all areas have NACH data)`,
         );
         return;
       }
 
       const nachData = await response.json();
+      console.log(`Loaded NACH data for ${park.id}: ${nachData.features ? nachData.features.length : 0} features`);
 
       if (!nachData.features || nachData.features.length === 0) {
         console.log(`No NACH data found for park: ${park.name}`);
