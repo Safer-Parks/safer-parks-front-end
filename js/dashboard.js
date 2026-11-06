@@ -209,6 +209,8 @@ document.addEventListener("DOMContentLoaded", initAnnouncementModal);
 let GITHUB_BASE_URL =
   "https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main";
 let selectedRegion = null;
+const ENABLE_CYCLING_DATA_LAYER = false;
+const CYCLING_DATA_UNAVAILABLE_MESSAGE = "Cycling data isn't yet available.";
 const REGION_OVERVIEW_MAX_ZOOM = 8;
 const REGION_DETAIL_MAX_ZOOM = 19;
 
@@ -1247,8 +1249,10 @@ document.getElementById("loadPark").addEventListener("click", async () => {
       const dependentLayers = [
         ["nachLayer", "nach-network", "Predicted Route Popularity (NACH)"],
         ["walkingLayer", "park-walking", "Walking Routes"],
-        ["cyclingLayer", "park-cycling", "Cycling Routes"],
       ];
+      if (ENABLE_CYCLING_DATA_LAYER) {
+        dependentLayers.push(["cyclingLayer", "park-cycling", "Cycling Routes"]);
+      }
       dependentLayers.forEach(([key, id, name]) => {
         if (
           mapState[key] &&
@@ -2330,6 +2334,17 @@ async function loadCyclingDataset(park) {
     // Remove existing cycling layer
     if (mapState.cyclingLayer && mapState.cyclingLayer.layer) {
       map.removeLayer(mapState.cyclingLayer.layer);
+    }
+
+    if (!ENABLE_CYCLING_DATA_LAYER) {
+      mapState.cyclingLayer = {
+        id: "park-cycling",
+        name: "Cycling Routes",
+        layer: null,
+        visible: false,
+        unavailableMessage: CYCLING_DATA_UNAVAILABLE_MESSAGE,
+      };
+      return;
     }
 
     const authPath = getAuthorityPath(mapState.currentAuthority.id);
