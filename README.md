@@ -12,4 +12,3 @@ Note that this will not work locally without a server, e.g. the index.html will 
 - Park boundary is automatically always on top; have added a white border to the green line to make it more visible.
 - Regions now divided by country.
 - Added a loading notice for both areas/authorities and parks; the user can more easily see that the dashboard is working.
-- The park-specific Cycling Routes layer is temporarily disabled with an unavailable note; set `ENABLE_CYCLING_DATA_LAYER` to `true` in `js/dashboard.js` to restore loading and filtering. The separate National Cycling Network layer is unaffected.
