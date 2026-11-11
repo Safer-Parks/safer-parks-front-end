@@ -209,8 +209,6 @@ document.addEventListener("DOMContentLoaded", initAnnouncementModal);
 let GITHUB_BASE_URL =
   "https://raw.githubusercontent.com/Safer-Parks/E12000003/refs/heads/main";
 let selectedRegion = null;
-const ENABLE_CYCLING_DATA_LAYER = false;
-const CYCLING_DATA_UNAVAILABLE_MESSAGE = "Cycling data isn't yet available.";
 const REGION_OVERVIEW_MAX_ZOOM = 8;
 const REGION_DETAIL_MAX_ZOOM = 19;
 
@@ -1250,9 +1248,6 @@ document.getElementById("loadPark").addEventListener("click", async () => {
         ["nachLayer", "nach-network", "Predicted Route Popularity (NACH)"],
         ["walkingLayer", "park-walking", "Walking Routes"],
       ];
-      if (ENABLE_CYCLING_DATA_LAYER) {
-        dependentLayers.push(["cyclingLayer", "park-cycling", "Cycling Routes"]);
-      }
       dependentLayers.forEach(([key, id, name]) => {
         if (
           mapState[key] &&
@@ -2335,17 +2330,7 @@ async function loadCyclingDataset(park) {
     if (mapState.cyclingLayer && mapState.cyclingLayer.layer) {
       map.removeLayer(mapState.cyclingLayer.layer);
     }
-
-    if (!ENABLE_CYCLING_DATA_LAYER) {
-      mapState.cyclingLayer = {
-        id: "park-cycling",
-        name: "Cycling Routes",
-        layer: null,
-        visible: false,
-        unavailableMessage: CYCLING_DATA_UNAVAILABLE_MESSAGE,
-      };
-      return;
-    }
+    mapState.cyclingLayer = null;
 
     const authPath = getAuthorityPath(mapState.currentAuthority.id);
 
@@ -2356,7 +2341,7 @@ async function loadCyclingDataset(park) {
     }
 
     // Load cycling file from cycling_dataset directory
-    const cyclingFilename = `cycling_dataset/${park.id}_cycling.geojson`;
+    const cyclingFilename = `cycling_dataset_v2/${park.id}_cycling.geojson`;
     console.log(`Attempting to load: ${authPath}${cyclingFilename}`);
 
     try {
@@ -2377,48 +2362,68 @@ async function loadCyclingDataset(park) {
 
       // Create feature group for cycling routes
       const cyclingGroup = L.featureGroup();
+      const formatOsmTagValue = (value) => {
+        if (value == null || String(value).trim() === "") return "";
+        return String(value)
+          .trim()
+          .replace(/[_-]+/g, " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (character) => character.toUpperCase());
+      };
+      const createCyclingRouteLine = (coords, properties = {}) => {
+        const category = formatOsmTagValue(properties.category);
+        const bicycleAccess = formatOsmTagValue(properties.bicycle);
+        const popupRows = [];
+        if (category) popupRows.push(`Category: ${escapeHtml(category)}`);
+        if (bicycleAccess) {
+          popupRows.push(`Bicycle access: ${escapeHtml(bicycleAccess)}`);
+        }
+
+        const line = L.polyline(coords, {
+          color: "#2196F3",
+          weight: 3,
+          opacity: 0.7,
+          lineCap: "round",
+          lineJoin: "round",
+          dashArray: "5, 5",
+        });
+        const popupContent = [
+          properties.name
+            ? `<strong>${escapeHtml(properties.name)}</strong>`
+            : "",
+          "<strong>OSM data</strong>",
+          ...popupRows,
+        ]
+          .filter(Boolean)
+          .join("<br/>");
+        line.bindPopup(popupContent);
+        line.bindTooltip(
+          [
+            category ? escapeHtml(category) : "",
+            bicycleAccess ? `Bicycle: ${escapeHtml(bicycleAccess)}` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ") || "Cycling Route",
+          {
+            permanent: false,
+            sticky: true,
+            direction: "top",
+            className: "park-cycling-tooltip",
+          },
+        );
+        return line;
+      };
 
       cyclingData.features.forEach((feature) => {
+        const properties = feature.properties || {};
         if (feature.geometry.type === "LineString") {
           const coords = feature.geometry.coordinates.map((c) => [c[1], c[0]]);
-
-          const line = L.polyline(coords, {
-            color: "#2196F3",
-            weight: 3,
-            opacity: 0.7,
-            lineCap: "round",
-            lineJoin: "round",
-            dashArray: "5, 5",
-          });
-
-          // Add popup with cycling route info if available
-          const popupContent = feature.properties.name
-            ? `<strong>${escapeHtml(feature.properties.name)}</strong>`
-            : "<strong>Cycling Route</strong>";
-          line.bindPopup(popupContent);
-
-          cyclingGroup.addLayer(line);
+          cyclingGroup.addLayer(createCyclingRouteLine(coords, properties));
         } else if (feature.geometry.type === "MultiLineString") {
           // Handle MultiLineString: each coordinate array is a separate line
           feature.geometry.coordinates.forEach((lineCoords) => {
             const coords = lineCoords.map((c) => [c[1], c[0]]);
-
-            const line = L.polyline(coords, {
-              color: "#2196F3",
-              weight: 3,
-              opacity: 0.7,
-              lineCap: "round",
-              lineJoin: "round",
-              dashArray: "5, 5",
-            });
-
-            // Add popup with cycling route info if available
-            const popupContent = feature.properties.name
-              ? `<strong>${escapeHtml(feature.properties.name)}</strong>`
-              : "<strong>Cycling Route</strong>";
-            line.bindPopup(popupContent);
-
-            cyclingGroup.addLayer(line);
+            cyclingGroup.addLayer(createCyclingRouteLine(coords, properties));
           });
         }
       });
@@ -2479,46 +2484,55 @@ async function loadWalkingDataset(park) {
 
       // Create feature group for walking routes
       const walkingGroup = L.featureGroup();
+      const formatCategory = (value) => {
+        if (value == null || String(value).trim() === "") return "";
+        return String(value)
+          .trim()
+          .replace(/[_-]+/g, " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (character) => character.toUpperCase());
+      };
+      const createWalkingRouteLine = (coords, properties = {}) => {
+        const category = formatCategory(properties.category);
+        const line = L.polyline(coords, {
+          color: "#FF6F00",
+          weight: 3,
+          opacity: 0.7,
+          lineCap: "round",
+          lineJoin: "round",
+        });
+        const popupContent = [
+          properties.name
+            ? `<strong>${escapeHtml(properties.name)}</strong>`
+            : "",
+          "<strong>OSM data</strong>",
+          category ? `Category: ${escapeHtml(category)}` : "",
+        ]
+          .filter(Boolean)
+          .join("<br/>");
+        line.bindPopup(popupContent);
+        line.bindTooltip(
+          category ? escapeHtml(category) : "Walking Route",
+          {
+            permanent: false,
+            sticky: true,
+            direction: "top",
+            className: "walking-tooltip",
+          },
+        );
+        return line;
+      };
 
       walkingData.features.forEach((feature) => {
+        const properties = feature.properties || {};
         if (feature.geometry.type === "LineString") {
           const coords = feature.geometry.coordinates.map((c) => [c[1], c[0]]);
-
-          const line = L.polyline(coords, {
-            color: "#FF6F00",
-            weight: 3,
-            opacity: 0.7,
-            lineCap: "round",
-            lineJoin: "round",
-          });
-
-          // Add popup with walking route info if available
-          const popupContent = feature.properties.name
-            ? `<strong>${escapeHtml(feature.properties.name)}</strong>`
-            : "<strong>Walking Route</strong>";
-          line.bindPopup(popupContent);
-
-          walkingGroup.addLayer(line);
+          walkingGroup.addLayer(createWalkingRouteLine(coords, properties));
         } else if (feature.geometry.type === "MultiLineString") {
           // Handle MultiLineString: each coordinate array is a separate line
           feature.geometry.coordinates.forEach((lineCoords) => {
             const coords = lineCoords.map((c) => [c[1], c[0]]);
-
-            const line = L.polyline(coords, {
-              color: "#FF6F00",
-              weight: 3,
-              opacity: 0.7,
-              lineCap: "round",
-              lineJoin: "round",
-            });
-
-            // Add popup with walking route info if available
-            const popupContent = feature.properties.name
-              ? `<strong>${escapeHtml(feature.properties.name)}</strong>`
-              : "<strong>Walking Route</strong>";
-            line.bindPopup(popupContent);
-
-            walkingGroup.addLayer(line);
+            walkingGroup.addLayer(createWalkingRouteLine(coords, properties));
           });
         }
       });
@@ -3153,7 +3167,7 @@ async function loadRegionalCyclingNetwork() {
             line.bindTooltip("National Cycle Network", {
               permanent: false,
               direction: "top",
-              className: "cycling-tooltip",
+              className: "cycling-network-tooltip",
             });
 
             cyclingGroup.addLayer(line);
