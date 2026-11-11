@@ -439,9 +439,10 @@ aside#legendPanel {
   border-top-color: rgba(76, 175, 80, 0.95) !important;
 }
 
-/* Cycling network tooltip styling */
-.cycling-tooltip {
-  background: rgba(255, 107, 53, 0.95) !important;
+/* Cycling and walking route tooltip styling */
+.park-cycling-tooltip,
+.walking-tooltip,
+.cycling-network-tooltip {
   color: white !important;
   border-radius: 4px;
   padding: 8px 12px !important;
@@ -449,7 +450,27 @@ aside#legendPanel {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-.cycling-tooltip::before {
+.park-cycling-tooltip {
+  background: rgba(33, 150, 243, 0.95) !important;
+}
+
+.park-cycling-tooltip::before {
+  border-top-color: rgba(33, 150, 243, 0.95) !important;
+}
+
+.walking-tooltip {
+  background: rgba(255, 111, 0, 0.95) !important;
+}
+
+.walking-tooltip::before {
+  border-top-color: rgba(255, 111, 0, 0.95) !important;
+}
+
+.cycling-network-tooltip {
+  background: rgba(255, 107, 53, 0.95) !important;
+}
+
+.cycling-network-tooltip::before {
   border-top-color: rgba(255, 107, 53, 0.95) !important;
 }
 
