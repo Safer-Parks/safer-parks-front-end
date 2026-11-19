@@ -406,12 +406,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <button class="modal-close-btn" aria-label="Close modal">&times;</button>
             <h3 class="modal-title">Visibility Analysis</h3>
             <div class="modal-content" id="content-visibilityAnalysis">
-                Hexagonal analysis showing visibility across the park, with colours ranging from low (dark) to high (bright) visibility.
-
                 <hr>
                 <section id="what-is-this-layer-5" class="level3">
                 <h3 class="anchored" data-anchor-id="what-is-this-layer-5">What is this layer?</h3>
-                <p>This layer shows how visually connected different parts of the park are. It considers factors such as elevation, tree canopy height, and shrub height. The layer is displayed as a hexagonal grid.</p>
+                <p>This layer shows how much of the surrounding ground you can see from each part of the park, in other words, how visually connected different parts of the park are. The park is covered by a grid of hexagons. From each hexagon, we check whether a person with eyes at 1 m above the ground can see the ground at every other hexagon within 80 m. We use a 1 m height to reflect roughly what a child, a shorter adult or a wheelchair user could see. Each hexagon shows the percentage of those points that are in view. It considers the shape of the ground and the top surface of trees, shrubs, and buildings. A high value means open views in most directions. A low value means views from that spot are blocked by vegetation, slopes or structures.</p>
                 </section>
                 <section id="how-to-use-this-information-5" class="level3">
                 <h3 class="anchored" data-anchor-id="how-to-use-this-information-5">How to use this information</h3>
@@ -430,7 +428,10 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 </section>
                 <section id="where-is-the-data-from-5" class="level3">
                 <h3 class="anchored" data-anchor-id="where-is-the-data-from-5">Where is the data from?</h3>
-                <p>This layer uses DEFRA LIDAR data and author-generated analysis. For England, it draws on the 2022 composite dataset (Digital Surface Model and Digital Terrain Model). For Wales, a 32-bit LiDAR dataset is used. Full details are available in the Safer Parks GitHub repository: https://github.com/Safer-Parks/park-vga; and https://github.com/Safer-Parks/park-vga/blob/main/notebooks/finding_lidar_tiles/README_downlaoding.md).</p>
+                <p>This layer uses DEFRA LIDAR data and author-generated analysis. For England, it draws on the 2022 composite dataset (Digital Surface Model and Digital Terrain Model). For Wales, a 32-bit LiDAR dataset is used. Full details are available in the Safer Parks GitHub repository: <a href="https://github.com/Safer-Parks/park-vga">Park Visibility repository</a>; and <a href="https://github.com/Safer-Parks/park-vga/blob/main/notebooks/finding_lidar_tiles/README_downlaoding.md">Downloading Lidar Notebook</a>.</p>
+                <p>DEFRA LIDAR data records only the top surface of the park, like a sheet draped over the trees and the ground, so the layer cannot see under the tree canopy. A tree with a lifted canopy and bare trunk is treated the same as a tree with dense undergrowth. This means areas under or behind trees will often show low visibility, even where the view at eye level is clear. The layer can look lower than what you see on site, so read it as a worst case, with no maintenance of lower branches or undergrowth, and check it against what you see on site.</p>
+                <img src="assets/Visibility.png" alt="Cartoon showing visibility analysis interpretation as described in the above paragraph.">
+                <p><i>Why the visibility layer can look lower than what you see on site.</i></p>
                 </section>
             </div>
         </div>
@@ -554,7 +555,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <hr>
                 <section id="what-is-this-layer-4" class="level3">
                 <h3 class="anchored" data-anchor-id="what-is-this-layer-4">What is this layer?</h3>
-                <p>Illustrates how people are likely to move through streets and paths, showing movement patterns at a neighbourhood scale, around a 10-minute walk. Higher values indicate greater potential for pedestrian movement, footfall, and co-presence. It is displayed as a line network.</p>
+                <p>Illustrates how people are likely to move through streets and paths, showing movement patterns at a neighbourhood scale, around a 10-minute walk. Higher values indicate greater potential for pedestrian movement, footfall, and co-presence. It is displayed as a line network.</p>
                 </section>
                 <section id="how-to-use-this-information-4" class="level3">
                 <h3 class="anchored" data-anchor-id="how-to-use-this-information-4">How to use this information</h3>
@@ -694,11 +695,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <button class="modal-close-btn" aria-label="Close modal">&times;</button>
             <h3 class="modal-title">Cycling Routes</h3>
             <div class="modal-content" id="content-cyclingRoutes">
-                Cycling routes and paths within the park. This is one of the active travel layers. Routes are based on OpenStreetMap and do not confirm a legal right to cycle. Please check local signs.
-                <hr>
                 <section id="what-is-this-layer-2" class="level3">
                 <h3 class="anchored" data-anchor-id="what-is-this-layer-2">What is this layer?</h3>
-                <p>Cycling and walking infrastructure within and around parks. The network is displayed as lines.</p>
+                <p>Cycling routes within and around parks. The network is displayed as lines. Routes are based on OpenStreetMap and do not confirm a legal right to cycle. Please check local signs.</p>
                 </section>
                 <section id="how-to-use-this-information-2" class="level3">
                 <h3 class="anchored" data-anchor-id="how-to-use-this-information-2">How to use this information</h3>
@@ -717,6 +716,7 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
                 <section id="where-is-the-data-from-2" class="level3">
                 <h3 class="anchored" data-anchor-id="where-is-the-data-from-2">Where is the data from?</h3>
                 <p>This layer uses OpenStreetMap data downloaded via Geofabrik and filtered to extract active travel infrastructure across England and Wales. The data is split into two layers: cycling (cycleways, cycle lanes, shared paths, bridleways, and tracks) and walking (footways, pedestrian areas, shared paths, bridleways, and tracks). Shared paths, bridleways, and tracks appear in both layers as they serve both cyclists and pedestrians.</p>
+                <p>The Cycling Routes layer (updated November 2026) is meant to show cycling infrastructure: routes built or signed for cycling. It shows seven types of route: dedicated cycleways, cycle lanes on streets, shared paths, bridleways, tracks, traffic-free roads (roads closed to cars but open to bikes, such as many park drives) and signed cycle routes (roads that are part of a national, regional or local cycle route). Ordinary streets without a cycle lane or signed route are not shown, although cycling on them is usually legal. A route is included only where OpenStreetMap shows that cycling is allowed, or where the law allows it by default, as on public bridleways. Paths marked as no cycling, private or no access are left out. Routes are based on OpenStreetMap, which anyone can edit and correct, so they do not always confirm a legal right to cycle. Please check local signs.</p>
                 </section>
             </div>
         </div>
@@ -727,11 +727,9 @@ cookieconsent.run({"notice_banner_type":"standalone","consent_type":"express","p
             <button class="modal-close-btn" aria-label="Close modal">&times;</button>
             <h3 class="modal-title">Walking Routes</h3>
             <div class="modal-content" id="content-walkingRoutes">
-                Walking paths and routes within the park. This is one of the active travel layers. Routes are based on OpenStreetMap and do not confirm a legal right to access. Please check local signs.
-                <hr>
                 <section id="what-is-this-layer-2" class="level3">
                 <h3 class="anchored" data-anchor-id="what-is-this-layer-2">What is this layer?</h3>
-                <p>Cycling and walking infrastructure within and around parks. The network is displayed as lines.</p>
+                <p>Walking infrastructure within and around parks. The network is displayed as lines. This is one of the active travel layers. Routes are based on OpenStreetMap and do not confirm a legal right to access. Please check local signs.</p>
                 </section>
                 <section id="how-to-use-this-information-2" class="level3">
                 <h3 class="anchored" data-anchor-id="how-to-use-this-information-2">How to use this information</h3>
