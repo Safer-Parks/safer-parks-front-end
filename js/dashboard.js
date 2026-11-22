@@ -2463,8 +2463,8 @@ async function loadWalkingDataset(park) {
       return;
     }
 
-    // Load walking file from walking_dataset directory
-    const walkingFilename = `walking_dataset/${park.id}_walking.geojson`;
+    // Load walking file from walking_dataset_v2 directory
+    const walkingFilename = `walking_dataset_v2/${park.id}_walking.geojson`;
 
     try {
       const response = await cachedFetch(`${authPath}${walkingFilename}`);
